@@ -1,0 +1,10 @@
+docker:
+    repo_url: ubuntu
+    tag: "22.04"
+basic_repo:
+    repo_url: https://github.com/plctlab/plct-qemu.git
+    branch: ruyi_qemu
+build_script:
+    repo_url: https://github.com/ruyisdk/ruyici.git
+    branch: main
+    path: qemu/qemu-user-static_ubuntu2204.sh

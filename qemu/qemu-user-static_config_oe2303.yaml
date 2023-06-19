@@ -1,0 +1,10 @@
+docker:
+    repo_url: openeuler/openeuler
+    tag: "23.03"
+basic_repo:
+    repo_url: https://github.com/plctlab/plct-qemu.git
+    branch: ruyi_qemu
+build_script:
+    repo_url: https://github.com/ruyisdk/ruyici.git
+    branch: main
+    path: qemu/qemu-user-static_oe.sh
