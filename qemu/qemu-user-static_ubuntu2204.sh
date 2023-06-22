@@ -1,6 +1,7 @@
 #!/bin/bash
 # install dependency
-apt install gcc git make ninja-build python3 python3-pip libglib2.0-dev libpixman-1-dev
+apt update
+apt install -y gcc git make ninja-build python3 python3-pip libglib2.0-dev libpixman-1-dev
 # apt build-dep qemu
 
 cd /home/src
