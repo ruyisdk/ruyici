@@ -3,7 +3,7 @@ docker:
     tag: "22.03"
 basic_repo:
     repo_url: https://github.com/plctlab/plct-qemu.git
-    branch: ruyi_qemu
+    branch: ruyi-qemu
 build_script:
     repo_url: https://github.com/ruyisdk/ruyici.git
     branch: main
