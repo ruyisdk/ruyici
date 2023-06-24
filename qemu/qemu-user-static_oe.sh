@@ -13,4 +13,5 @@ make -j $(nproc)
 make install
 cd ..
 rm -r build-static
-
+chmod -R 777 /home/src
+chmod -R 777 /home/build
