@@ -1,0 +1,10 @@
+docker:
+    repo_url: openeuler
+    tag: "23.03"
+basic_repo:
+    repo_url: https://github.com/ruyisdk/riscv-gnu-toolchain
+    branch: gcc-10
+build_script:
+    repo_url: https://github.com/ruyisdk/ruyici.git
+    branch: main
+    path: gcc/openeuler/23.03/rv64gcbvpzfh/gcc.sh

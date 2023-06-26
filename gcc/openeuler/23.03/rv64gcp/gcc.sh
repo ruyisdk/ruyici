@@ -5,5 +5,5 @@ set -x
 yum update
 yum install -y autoconf automake python3 libmpc-devel mpfr-devel gmp-devel gawk bison flex texinfo patchutils gcc gcc-c++ zlib-devel expat-devel make diffutils
 cd /home/src
-./configure --prefix=/home/build/$1 --with-arch=rv64gcp
-make linux -j $(nproc)
+./configure --prefix=/home/build/$1 --with-arch=rv64gc_zpn_zpsfoperand_zprvsfextra
+make -j $(nproc)
