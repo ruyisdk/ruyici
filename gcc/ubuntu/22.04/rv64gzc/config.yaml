@@ -1,0 +1,10 @@
+docker:
+    repo_url: ubuntu
+    tag: "22.04"
+basic_repo:
+    repo_url: https://github.com/ruyisdk/riscv-gnu-toolchain
+    branch: gcc-13
+build_script:
+    repo_url: https://github.com/ruyisdk/ruyici.git
+    branch: main
+    path: gcc/ubuntu/22.04/rv64gzc/gcc.sh
