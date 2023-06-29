@@ -1,0 +1,10 @@
+docker:
+    repo_url: openeuler/openeuler
+    tag: "23.03"
+basic_repo:
+        repo_url: https://github.com/ruyisdk/llvm-project.git
+        branch: release/15.x
+build_script:
+        repo_url: https://github.com/ChunyuLiao/ruyici.git
+        branch: main
+        path: llvm/llvm15-openeuler.sh
