@@ -13,18 +13,20 @@ main() {
 	local config="$1"
 
 	ensure_dir "$MY_DIR/out"
+	ensure_dir "$MY_DIR/prefix"
 	ensure_dir "$MY_DIR/src"
 	ensure_dir "$MY_DIR/work"
 
 	local docker_args=(
 		--rm
 		-ti
-		"${RUYI_BUILDER_TAG}"
 		-v "$MY_DIR/out":/out
+		-v "$MY_DIR/prefix":/opt/ruyi
 		-v "$MY_DIR/src":/src
 		-v "$MY_DIR/work":/work
-		-v "$(realpath "$config")":/home/b/input.defconfig:ro
-		ruyi-build-inner
+		-v "$(realpath "$config")":/tmp/input.defconfig:ro
+		"${RUYI_BUILDER_TAG}"
+		ruyi-build-inner /tmp/input.defconfig
 	)
 	docker run "${docker_args[@]}"
 }

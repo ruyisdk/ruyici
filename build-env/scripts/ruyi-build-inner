@@ -6,7 +6,10 @@ set -e
 
 export CT_PREFIX=/opt/ruyi
 
-cd /home/b
-cp input.defconfig .config
-ct-ng oldconfig
+ls -alF /out
+ls -alF /src
+ls -alF /work
+
+cd /work
+ct-ng defconfig DEFCONFIG="$1"
 exec ct-ng build
