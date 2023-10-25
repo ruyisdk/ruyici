@@ -1,4 +1,6 @@
 /.build
+/.config
+/.config.old
 /out
 /prefix
 /src
