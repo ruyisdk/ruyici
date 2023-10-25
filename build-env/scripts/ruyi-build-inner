@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# This script runs inside the container.
+
+set -e
+
+export CT_PREFIX=/opt/ruyi
+
+cd /home/b
+cp input.defconfig .config
+ct-ng oldconfig
+exec ct-ng build
