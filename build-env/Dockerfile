@@ -12,6 +12,5 @@ ARG CT_NG_DOWNLOAD_URL_BASE="http://crosstool-ng.org/download/crosstool-ng"
 COPY ./scripts/install-ct-ng.sh /tmp/install-ct-ng.sh
 RUN /tmp/install-ct-ng.sh
 
-COPY ./scripts/ruyi-build-inner /usr/local/bin/ruyi-build-inner
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b
