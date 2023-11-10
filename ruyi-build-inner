@@ -12,4 +12,4 @@ ls -alF /work
 
 cd /work
 ct-ng defconfig DEFCONFIG="$1"
-exec ct-ng build
+exec schedtool -D -n 5 -e ct-ng build

@@ -25,6 +25,7 @@ apt-get upgrade -qqy
 apt-get install -y gcc g++ gperf bison flex texinfo help2man make libncurses5-dev \
     python3-dev autoconf automake libtool libtool-bin gawk wget bzip2 xz-utils unzip \
     patch libstdc++6 rsync git meson ninja-build \
-    g++-riscv64-linux-gnu
+    g++-riscv64-linux-gnu \
+    schedtool
 
 apt-get clean
