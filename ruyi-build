@@ -4,6 +4,11 @@ MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 RUYI_BUILDER_TAG="${RUYI_BUILDER_TAG:-ruyi-builder:ubuntu2004-20231110}"
 
+die() {
+	echo "$@" >&2
+	exit 1
+}
+
 ensure_dir() {
 	local path="$1"
 	[[ -d "$path" ]] || mkdir "$path"
@@ -29,7 +34,7 @@ main() {
 		"${RUYI_BUILDER_TAG}"
 		ruyi-build-inner /tmp/input.defconfig
 	)
-	docker run "${docker_args[@]}"
+	docker run "${docker_args[@]}" || die "inner build pass failed"
 }
 
 main "$@"
