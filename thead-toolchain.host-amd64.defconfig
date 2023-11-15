@@ -12,7 +12,7 @@ CT_ARCH_64=y
 CT_ARCH_ARCH="rv64gc"
 CT_ARCH_ABI="lp64d"
 # CT_SHOW_CT_VERSION is not set
-CT_TOOLCHAIN_PKGVERSION="RuyiSDK 20231024 TESTING"
+CT_TOOLCHAIN_PKGVERSION="RuyiSDK 20231110 T-Head-Sources"
 CT_TOOLCHAIN_BUGURL="https://github.com/ruyisdk/ruyisdk/issues"
 CT_TARGET_VENDOR="plctxthead"
 CT_KERNEL_LINUX=y
@@ -47,5 +47,6 @@ CT_GDB_SRC_DEVEL=y
 CT_GDB_DEVEL_URL="https://github.com/T-Head-Semi/binutils-gdb.git"
 CT_GDB_DEVEL_BRANCH="xuantie-binutils-gdb-2.35-matrix"
 CT_GDB_V_10=y
+# CT_GDB_GDBSERVER is not set
 CT_COMP_LIBS_CLOOG=y
 CT_COMP_LIBS_LIBELF=y
