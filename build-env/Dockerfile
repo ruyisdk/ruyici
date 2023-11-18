@@ -10,7 +10,9 @@ ARG CT_NG_VERSION=1.26.0
 ARG CT_NG_DOWNLOAD_URL_BASE="http://crosstool-ng.org/download/crosstool-ng"
 
 COPY ./scripts/install-ct-ng.sh /tmp/install-ct-ng.sh
+COPY ./fix-multilib.patch /tmp/ct-ng-patches/fix-multilib.patch
 RUN /tmp/install-ct-ng.sh
+
 
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b
