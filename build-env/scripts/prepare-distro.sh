@@ -26,10 +26,16 @@ EOF
 apt-get update
 apt-get upgrade -qqy
 
+# Install recent cmake
+apt-get install -y wget software-properties-common lsb-release ca-certificates
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+apt-get update
+
 pkgs=(
     # for ct-ng
     gcc g++ gperf bison flex texinfo help2man make libncurses5-dev
-    python3-dev autoconf automake libtool libtool-bin gawk wget bzip2 xz-utils unzip
+    python3-dev autoconf automake libtool libtool-bin gawk bzip2 xz-utils unzip
     patch libstdc++6 rsync git meson ninja-build
 
     # for targetting riscv64 host
