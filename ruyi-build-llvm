@@ -1,0 +1,35 @@
+#!/bin/bash
+
+MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+RUYI_BUILDER_TAG="${RUYI_BUILDER_TAG:-ruyi-builder:ubuntu2004-20231121}"
+
+die() {
+	echo "$@" >&2
+	exit 1
+}
+
+ensure_dir() {
+	local path="$1"
+	[[ -d "$path" ]] || mkdir "$path"
+}
+
+main() {
+	local config="$1"
+
+	ensure_dir "$MY_DIR/out"
+	ensure_dir "$MY_DIR/work"
+
+	local docker_args=(
+		--rm
+		-ti
+		-v "$MY_DIR/out":/out
+		-v "$MY_DIR/work":/work
+		-v "$MY_DIR/ruyi-build-llvm-inner":/usr/local/bin/ruyi-build-llvm-inner:ro
+		"${RUYI_BUILDER_TAG}"
+		ruyi-build-llvm-inner
+	)
+	docker run "${docker_args[@]}" || die "inner build pass failed"
+}
+
+main "$@"

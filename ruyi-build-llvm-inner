@@ -1,0 +1,59 @@
+#!/bin/bash
+
+set -e
+
+P="llvm-17.0.5"
+PV="17.0.5"
+RUYI_DATESTAMP=20231121
+ARCH=amd64
+SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
+
+SRC_DIR="/tmp/llvm-src"
+INSTALL_ROOT=/tmp/prefix/"$P"
+
+CMAKE_ARGS=(
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT"
+    -DCMAKE_C_FLAGS="-O2 -pipe"
+    -DCMAKE_CXX_FLAGS="-O2 -pipe"
+    -DLLVM_USE_LINKER=lld
+    -DLLVM_ENABLE_LTO=Thin
+    -DLLVM_PARALLEL_COMPILE_JOBS=$(nproc)
+    -DLLVM_PARALLEL_LINK_JOBS=4
+    -DLLVM_SOURCE_PREFIX="$SRC_DIR"
+    -DLLVM_USE_RELATIVE_PATHS_IN_FILES=ON
+    -DLLVM_USE_RELATIVE_PATHS_IN_DEBUG_INFO=ON
+
+    -DLLVM_BUILD_LLVM_DYLIB=ON
+    -DLLVM_LINK_LLVM_DYLIB=ON
+    -DLLVM_INSTALL_UTILS=ON
+
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libc;lld"
+    -DLLVM_ENABLE_RUNTIMES=all
+    -DLLVM_INCLUDE_BENCHMARKS=OFF
+    -DLLVM_INCLUDE_EXAMPLES=OFF
+    -DLLVM_INCLUDE_TESTS=OFF
+
+    # seems unsupported
+    # --with-pkgversion="RuyiSDK $RUYI_DATESTAMP"
+)
+
+pushd /tmp
+    wget -O "${P}.tar.xz" "$SRC_URI"
+
+    mkdir "$SRC_DIR"
+    pushd "$SRC_DIR"
+        tar xf "../${P}.tar.xz" --strip-components=1
+    popd
+
+    mkdir build
+    pushd build
+        cmake "${SRC_DIR}/llvm" "${CMAKE_ARGS[@]}"
+        ninja
+        ninja install
+    popd
+popd
+
+pushd "$INSTALL_ROOT"/..
+    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP"."$ARCH".tar.zst .
+popd
