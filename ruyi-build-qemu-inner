@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -e
+
+P="qemu-8.1.2"
+RUYI_DATESTAMP=20231121
+ARCH=amd64
+SRC_URI="https://download.qemu.org/${P}.tar.xz"
+
+USER_TARGETS="riscv32-linux-user,riscv64-linux-user"
+
+USER_TARGET_EXES=(
+    qemu-riscv32
+    qemu-riscv64
+)
+
+SYSTEM_TARGETS="riscv32-softmmu,riscv64-softmmu"
+
+SYSTEM_TARGET_EXES=(
+    qemu-system-riscv32
+    qemu-system-riscv64
+)
+
+INSTALL_ROOT=/tmp/prefix
+
+COMMON_CONFIG_ARGS=(
+    --prefix="$INSTALL_ROOT"
+    --disable-docs
+    --with-pkgversion="RuyiSDK $RUYI_DATESTAMP"
+)
+
+pushd /tmp
+    wget "$SRC_URI"
+    tar xf "${P}.tar.xz"
+
+    mkdir build-user
+    pushd build-user
+        ../"$P"/configure "${COMMON_CONFIG_ARGS[@]}" \
+            --target-list="$USER_TARGETS" \
+            --static
+        ninja "${USER_TARGET_EXES[@]}"
+        ninja install
+    popd
+
+    mkdir build-sys
+    pushd build-sys
+        ../"$P"/configure "${COMMON_CONFIG_ARGS[@]}" \
+            --target-list="$SYSTEM_TARGETS"
+        ninja "${SYSTEM_TARGET_EXES[@]}"
+        ninja install
+    popd
+popd
+
+pushd "$INSTALL_ROOT"
+    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP"."$ARCH".tar.zst .
+popd

@@ -18,21 +18,16 @@ main() {
 	local config="$1"
 
 	ensure_dir "$MY_DIR/out"
-	ensure_dir "$MY_DIR/prefix"
-	ensure_dir "$MY_DIR/src"
 	ensure_dir "$MY_DIR/work"
 
 	local docker_args=(
 		--rm
 		-ti
 		-v "$MY_DIR/out":/out
-		-v "$MY_DIR/prefix":/opt/ruyi
-		-v "$MY_DIR/src":/src
 		-v "$MY_DIR/work":/work
-		-v "$MY_DIR/ruyi-build-inner":/usr/local/bin/ruyi-build-inner:ro
-		-v "$(realpath "$config")":/tmp/input.defconfig:ro
+		-v "$MY_DIR/ruyi-build-qemu-inner":/usr/local/bin/ruyi-build-qemu-inner:ro
 		"${RUYI_BUILDER_TAG}"
-		ruyi-build-inner /tmp/input.defconfig
+		ruyi-build-qemu-inner
 	)
 	docker run "${docker_args[@]}" || die "inner build pass failed"
 }

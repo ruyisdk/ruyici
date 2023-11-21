@@ -41,6 +41,9 @@ pkgs=(
     # for LLVM
     build-essential cmake pkgconf
     libedit-dev libffi-dev libjsoncpp-dev libz3-dev
+
+    # for QEMU
+    python3-venv zstd
 )
 
 apt-get install -y "${pkgs[@]}"
