@@ -24,12 +24,16 @@ tzdata tzdata/Zones/Etc select UTC
 EOF
 
 apt-get update
-apt-get upgrade -qqy
 
 # Install recent cmake
 apt-get install -y wget software-properties-common lsb-release ca-certificates
 wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
 apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+
+# And recent LLVM
+wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-17 main"
+
 apt-get update
 
 pkgs=(
@@ -44,15 +48,18 @@ pkgs=(
     # for ruyi-build driver
     schedtool
 
+    # common goodies
+    zstd libzstd-dev clang-17 lld-17
+
     # for LLVM
     build-essential cmake pkgconf
     libedit-dev libffi-dev libjsoncpp-dev libz3-dev
-    lld
 
     # for QEMU
-    python3-venv zstd
+    python3-venv
 )
 
+apt-get upgrade -qqy
 apt-get install -y "${pkgs[@]}"
 
 # for QEMU

@@ -13,6 +13,8 @@ COPY ./scripts/install-ct-ng.sh /tmp/install-ct-ng.sh
 COPY ./fix-multilib.patch /tmp/ct-ng-patches/fix-multilib.patch
 RUN /tmp/install-ct-ng.sh
 
+COPY ./scripts/symlink-llvm-tools.sh /tmp/symlink-llvm-tools.sh
+RUN /tmp/symlink-llvm-tools.sh
 
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b

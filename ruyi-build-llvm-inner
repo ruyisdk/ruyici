@@ -12,8 +12,11 @@ SRC_DIR="/tmp/llvm-src"
 INSTALL_ROOT=/tmp/prefix/"$P"
 
 CMAKE_ARGS=(
+    -G Ninja
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT"
+    -DCMAKE_C_COMPILER=clang
+    -DCMAKE_CXX_COMPILER=clang++
     -DCMAKE_C_FLAGS="-O2 -pipe"
     -DCMAKE_CXX_FLAGS="-O2 -pipe"
     -DLLVM_USE_LINKER=lld
