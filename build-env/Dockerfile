@@ -16,5 +16,8 @@ RUN /tmp/install-ct-ng.sh
 COPY ./scripts/symlink-llvm-tools.sh /tmp/symlink-llvm-tools.sh
 RUN /tmp/symlink-llvm-tools.sh
 
+COPY ./scripts/make-some-static-libs.sh /tmp/make-some-static-libs.sh
+RUN /tmp/make-some-static-libs.sh
+
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b
