@@ -53,7 +53,7 @@ pkgs=(
 
     # for LLVM
     build-essential cmake pkgconf
-    libedit-dev libffi-dev libjsoncpp-dev libz3-dev
+    libedit-dev libffi-dev libjsoncpp-dev libz3-dev liblzma-dev
 
     # for QEMU
     python3-venv

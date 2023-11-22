@@ -8,8 +8,17 @@ RUYI_DATESTAMP=20231121
 ARCH=amd64
 SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
 
-SRC_DIR="/tmp/llvm-src"
-INSTALL_ROOT=/tmp/prefix/"$P"
+USE_MEM=true
+if $USE_MEM; then
+    TMP=/tmp/mem  # mounted by outer script
+else
+    TMP=/tmp
+fi
+
+SRC_DIR="${TMP}/llvm-src"
+INSTALL_ROOT=${TMP}/prefix/"$P"
+
+HOST_STATIC_LIB_ROOT="/usr/lib/x86_64-linux-gnu"
 
 CMAKE_ARGS=(
     -G Ninja
@@ -32,29 +41,46 @@ CMAKE_ARGS=(
     -DLLVM_INSTALL_UTILS=ON
 
     -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libc;lld"
-    -DLLVM_ENABLE_RUNTIMES=all
+    # broken for now, seems a sysroot for each target is needed
+    #-DLLVM_ENABLE_RUNTIMES=all
+    #-DLLVM_RUNTIME_TARGETS="riscv32-unknown-linux-gnu;riscv64-unknown-linux-gnu"
     -DLLVM_INCLUDE_BENCHMARKS=OFF
     -DLLVM_INCLUDE_EXAMPLES=OFF
     -DLLVM_INCLUDE_TESTS=OFF
+
+    # force static linking of non-libc deps for best portability
+    -DLLVM_ENABLE_LIBEDIT=FORCE_ON
+    -DLibEdit_LIBRARIES="${HOST_STATIC_LIB_ROOT}/libedit.a"
+    # only useful for Windows manifest functions, it seems, but really painful
+    # to properly statically link to; disable for now
+    #-DLLVM_ENABLE_LIBXML2=FORCE_ON
+    #-DLIBXML2_LIBRARY="${HOST_STATIC_LIB_ROOT}/libxml2.a"
+    -DLLVM_ENABLE_LIBXML2=OFF
+    -DLLVM_ENABLE_TERMINFO=FORCE_ON
+    -DTerminfo_LIBRARIES="${HOST_STATIC_LIB_ROOT}/libtinfo.a"
+    -DLLVM_ENABLE_ZLIB=FORCE_ON
+    -DZLIB_LIBRARY="${HOST_STATIC_LIB_ROOT}/libz.a"
+    -DLLVM_ENABLE_ZSTD=FORCE_ON
+    -Dzstd_LIBRARY="${HOST_STATIC_LIB_ROOT}/libzstd.a"
 
     # seems unsupported
     # --with-pkgversion="RuyiSDK $RUYI_DATESTAMP"
 )
 
 pushd /tmp
-    wget -O "${P}.tar.xz" "$SRC_URI"
+    [[ -e src.tar.xz ]] || wget -O src.tar.xz "$SRC_URI"
+popd
 
-    mkdir "$SRC_DIR"
-    pushd "$SRC_DIR"
-        tar xf "../${P}.tar.xz" --strip-components=1
-    popd
+mkdir "$SRC_DIR"
+pushd "$SRC_DIR"
+    tar xf /tmp/src.tar.xz --strip-components=1
+popd
 
-    mkdir build
-    pushd build
-        cmake "${SRC_DIR}/llvm" "${CMAKE_ARGS[@]}"
-        ninja
-        ninja install
-    popd
+mkdir "$TMP/build"
+pushd "$TMP/build"
+    cmake "${SRC_DIR}/llvm" "${CMAKE_ARGS[@]}"
+    ninja
+    ninja install
 popd
 
 pushd "$INSTALL_ROOT"/..
