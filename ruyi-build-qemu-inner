@@ -3,6 +3,7 @@
 set -e
 
 P="qemu-8.1.2"
+PV="8.1.2"
 RUYI_DATESTAMP=20231121
 ARCH=amd64
 SRC_URI="https://download.qemu.org/${P}.tar.xz"
@@ -22,9 +23,10 @@ SYSTEM_TARGET_EXES=(
 )
 
 INSTALL_ROOT=/tmp/prefix
+INSTALL_ROOT_USER="$INSTALL_ROOT/qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP"
+INSTALL_ROOT_SYSTEM="$INSTALL_ROOT/qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP"
 
 COMMON_CONFIG_ARGS=(
-    --prefix="$INSTALL_ROOT"
     --disable-docs
     --with-pkgversion="RuyiSDK $RUYI_DATESTAMP"
 )
@@ -32,25 +34,35 @@ COMMON_CONFIG_ARGS=(
 pushd /tmp
     wget "$SRC_URI"
     tar xf "${P}.tar.xz"
+popd
 
-    mkdir build-user
-    pushd build-user
-        ../"$P"/configure "${COMMON_CONFIG_ARGS[@]}" \
-            --target-list="$USER_TARGETS" \
-            --static
-        ninja "${USER_TARGET_EXES[@]}"
-        ninja install
-    popd
+SRC_DIR="/tmp/$P"
 
-    mkdir build-sys
-    pushd build-sys
-        ../"$P"/configure "${COMMON_CONFIG_ARGS[@]}" \
-            --target-list="$SYSTEM_TARGETS"
-        ninja "${SYSTEM_TARGET_EXES[@]}"
-        ninja install
-    popd
+mkdir /tmp/build-user
+pushd /tmp/build-user
+    "$SRC_DIR"/configure "${COMMON_CONFIG_ARGS[@]}" \
+        --prefix="$INSTALL_ROOT_USER" \
+        --target-list="$USER_TARGETS" \
+        --static
+    ninja "${USER_TARGET_EXES[@]}"
+    ninja install
+
+    # firmware is unneeded in the static-user build
+    rm -rf "$INSTALL_ROOT_USER/share"
+popd
+
+mkdir /tmp/build-sys
+pushd /tmp/build-sys
+    ../"$P"/configure "${COMMON_CONFIG_ARGS[@]}" \
+        --prefix="$INSTALL_ROOT_SYSTEM" \
+        --target-list="$SYSTEM_TARGETS"
+    ninja "${SYSTEM_TARGET_EXES[@]}"
+    ninja install
 popd
 
 pushd "$INSTALL_ROOT"
-    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP"."$ARCH".tar.zst .
+    tar --zstd -cvf "/out/qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
+        "./qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP"
+    tar --zstd -cvf "/out/qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
+        "./qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP"
 popd
