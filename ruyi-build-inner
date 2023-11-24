@@ -6,9 +6,9 @@ set -e
 
 export CT_PREFIX=/opt/ruyi
 
-ls -alF /out
-ls -alF /src
-ls -alF /work
+#ls -alF /out
+#ls -alF /src
+#ls -alF /work
 
 cd /work
 ct-ng defconfig DEFCONFIG="$1"
