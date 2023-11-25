@@ -1,0 +1,42 @@
+#!/bin/bash
+
+MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+RUYI_BUILDER_TAG="${RUYI_BUILDER_TAG:-ruyi-builder:ubuntu2004-20231122}"
+
+die() {
+	echo "$@" >&2
+	exit 1
+}
+
+ensure_dir() {
+	local path="$1"
+	[[ -d "$path" ]] || mkdir "$path"
+}
+
+main() {
+	local url="$1"
+	local branch="$2"
+
+	ensure_dir "$MY_DIR/out"
+
+	# assume /tmp is tmpfs for now
+	TMP_MEM_DIR="$(mktemp -d)"
+
+	local docker_args=(
+		--rm
+		-ti
+		-v "$MY_DIR/out":/out
+		-v "$MY_DIR/ruyi-package-git-repo-inner":/usr/local/bin/ruyi-package-git-repo-inner:ro
+		-v "$TMP_MEM_DIR":/tmp/mem
+	)
+
+	docker_args+=(
+		"${RUYI_BUILDER_TAG}"
+		ruyi-package-git-repo-inner "$url" "$branch"
+	)
+
+	docker run "${docker_args[@]}" || die "inner build pass failed"
+}
+
+main "$@"

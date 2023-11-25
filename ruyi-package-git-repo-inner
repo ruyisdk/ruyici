@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e
+
+url="$1"
+branch="$2"
+
+USE_MEM=true
+if $USE_MEM; then
+    TMP=/tmp/mem  # mounted by outer script
+else
+    TMP=/tmp
+fi
+
+clone_args=(
+    --depth 1
+    "$url"
+)
+
+if [[ -n $branch ]]; then
+    clone_args+=( -b "$branch" )
+fi
+
+pushd "$TMP"
+    git clone "${clone_args[@]}" src
+    pushd src
+        commit_hash="$(git rev-parse HEAD)"
+        rm -rf .git
+    popd
+
+    basename="$(basename "$url")"
+    basename="${basename%.git}"
+    destdir="$basename-$commit_hash"
+    mv src "$destdir"
+
+    tar --zstd -cvf "/out/${destdir}.src.tar.zst" "./$destdir"
+popd
