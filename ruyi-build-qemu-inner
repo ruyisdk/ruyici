@@ -62,7 +62,7 @@ popd
 
 pushd "$INSTALL_ROOT"
     tar --zstd -cvf "/out/qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
-        "./qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP"
+        "qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP"
     tar --zstd -cvf "/out/qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
-        "./qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP"
+        "qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP"
 popd
