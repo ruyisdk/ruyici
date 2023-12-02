@@ -2,7 +2,7 @@
 
 MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-RUYI_BUILDER_TAG="${RUYI_BUILDER_TAG:-ruyi-builder:ubuntu2004-20231122}"
+RUYI_BUILDER_TAG="${RUYI_BUILDER_TAG:-ruyi-builder:ubuntu2004-20231202}"
 
 die() {
 	echo "$@" >&2

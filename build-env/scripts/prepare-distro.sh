@@ -45,6 +45,9 @@ pkgs=(
     # for targetting riscv64 host
     g++-riscv64-linux-gnu
 
+    # for targetting aarch64 host
+    g++-aarch64-linux-gnu
+
     # for ruyi-build driver
     schedtool
 

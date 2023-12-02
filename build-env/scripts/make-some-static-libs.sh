@@ -12,9 +12,11 @@ MAKEOPTS=(
 )
 
 INSTALL_ROOT_AMD64=/opt/morelibs/amd64
+INSTALL_ROOT_ARM64=/opt/morelibs/arm64
 INSTALL_ROOT_RISCV64=/opt/morelibs/riscv64
 
 mkdir -p "$INSTALL_ROOT_AMD64"
+mkdir -p "$INSTALL_ROOT_ARM64"
 mkdir -p "$INSTALL_ROOT_RISCV64"
 
 # for LLVM's PIC code to be able to link to these
@@ -43,8 +45,6 @@ ZLIB_NG_COMMON_CMAKE_ARGS=(
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_C_COMPILER="$CC"
     -DCMAKE_CXX_COMPILER="$CXX"
-    -DCMAKE_C_FLAGS="$CFLAGS"
-    -DCMAKE_CXX_FLAGS="$CXXFLAGS"
     -DZLIB_COMPAT=ON
     -DZLIB_ENABLE_TESTS=OFF
     -DWITH_GTEST=OFF
@@ -54,12 +54,35 @@ mkdir /tmp/zlib-ng-build.amd64
 pushd /tmp/zlib-ng-build.amd64
     cmake "$ZLIB_NG_SRC_DIR" \
         -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT_AMD64" \
+        -DCMAKE_C_FLAGS="$CFLAGS" \
+        -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
         "${ZLIB_NG_COMMON_CMAKE_ARGS[@]}"
     ninja
     ninja install
 popd
 
-# TODO: riscv64 build
+mkdir /tmp/zlib-ng-build.arm64
+pushd /tmp/zlib-ng-build.arm64
+    cmake "$ZLIB_NG_SRC_DIR" \
+        -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT_ARM64" \
+        -DCMAKE_C_FLAGS="--target=aarch64-linux-gnu $CFLAGS" \
+        -DCMAKE_CXX_FLAGS="--target=aarch64-linux-gnu $CXXFLAGS" \
+        "${ZLIB_NG_COMMON_CMAKE_ARGS[@]}"
+    ninja
+    ninja install
+popd
+
+mkdir /tmp/zlib-ng-build.riscv64
+pushd /tmp/zlib-ng-build.riscv64
+    cmake "$ZLIB_NG_SRC_DIR" \
+        -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT_ARM64" \
+        -DCMAKE_C_FLAGS="--target=riscv64-linux-gnu $CFLAGS -fuse-ld=lld" \
+        -DCMAKE_CXX_FLAGS="--target=riscv64-linux-gnu $CXXFLAGS -fuse-ld=lld" \
+        "${ZLIB_NG_COMMON_CMAKE_ARGS[@]}"
+    ninja
+    ninja install
+popd
+
 rm -rf /tmp/zlib-ng-build.*
 
 #
@@ -90,6 +113,16 @@ pushd /tmp/ncurses-build.amd64
     "$NCURSES_SRC_DIR"/configure \
         --host=x86_64-pc-linux-gnu \
         --prefix="$INSTALL_ROOT_AMD64" \
+        "${NCURSES_COMMON_CONF_ARGS[@]}"
+    make "${MAKEOPTS[@]}"
+    make install "${MAKEOPTS[@]}"
+popd
+
+mkdir /tmp/ncurses-build.arm64
+pushd /tmp/ncurses-build.arm64
+    "$NCURSES_SRC_DIR"/configure \
+        --host=aarch64-linux-gnu \
+        --prefix="$INSTALL_ROOT_ARM64" \
         "${NCURSES_COMMON_CONF_ARGS[@]}"
     make "${MAKEOPTS[@]}"
     make install "${MAKEOPTS[@]}"
