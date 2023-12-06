@@ -15,8 +15,6 @@ ensure_dir() {
 }
 
 main() {
-	local config="$1"
-
 	ensure_dir "$MY_DIR/out"
 	ensure_dir "$MY_DIR/work"
 
@@ -28,6 +26,7 @@ main() {
 		-v "$MY_DIR/ruyi-build-qemu-inner":/usr/local/bin/ruyi-build-qemu-inner:ro
 		"${RUYI_BUILDER_TAG}"
 		ruyi-build-qemu-inner
+		"$@"
 	)
 	docker run "${docker_args[@]}" || die "inner build pass failed"
 }

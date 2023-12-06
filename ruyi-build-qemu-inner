@@ -2,11 +2,33 @@
 
 set -e
 
-P="qemu-8.1.2"
-PV="8.1.2"
-RUYI_DATESTAMP=20231121
+build_flavor="$1"
+
 ARCH=amd64
-SRC_URI="https://download.qemu.org/${P}.tar.xz"
+
+case "$build_flavor" in
+upstream)
+    P="qemu-8.1.2"
+    PV="8.1.2"
+    RUYI_DATESTAMP=20231121
+    srcfile="${P}.tar.xz"
+    SRC_URI="https://download.qemu.org/$srcfile"
+    pkgversion="RuyiSDK $RUYI_DATESTAMP"
+    ;;
+xthead)
+    P="qemu-6.1.0"
+    PV="6.1.0"
+    RUYI_DATESTAMP=20231206
+    thead_commit_hash=03813c9fe8
+    srcfile="qemu-xthead-$PV-g$thead_commit_hash.tar.zst"
+    SRC_URI="https://mirror.iscas.ac.cn/ruyisdk/dist/$srcfile"
+    pkgversion="T-Head commit $thead_commit_hash, RuyiSDK $RUYI_DATESTAMP"
+    ;;
+*)
+    echo "usage: ruyi-build-qemu <upstream|xthead>" >&2
+    exit 1
+    ;;
+esac
 
 USER_TARGETS="riscv32-linux-user,riscv64-linux-user"
 
@@ -23,20 +45,21 @@ SYSTEM_TARGET_EXES=(
 )
 
 INSTALL_ROOT=/tmp/prefix
-INSTALL_ROOT_USER="$INSTALL_ROOT/qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP"
-INSTALL_ROOT_SYSTEM="$INSTALL_ROOT/qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP"
+INSTALL_ROOT_USER="$INSTALL_ROOT/qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
+INSTALL_ROOT_SYSTEM="$INSTALL_ROOT/qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
 
 COMMON_CONFIG_ARGS=(
     --disable-docs
-    --with-pkgversion="RuyiSDK $RUYI_DATESTAMP"
+    --with-pkgversion="$pkgversion"
 )
+
 
 pushd /tmp
     wget "$SRC_URI"
-    tar xf "${P}.tar.xz"
+    tar xf "$srcfile"
 popd
 
-SRC_DIR="/tmp/$P"
+SRC_DIR="/tmp/${srcfile%.tar.*}"
 
 mkdir /tmp/build-user
 pushd /tmp/build-user
@@ -44,7 +67,6 @@ pushd /tmp/build-user
         --prefix="$INSTALL_ROOT_USER" \
         --target-list="$USER_TARGETS" \
         --static
-    ninja "${USER_TARGET_EXES[@]}"
     ninja install
 
     # firmware is unneeded in the static-user build
@@ -53,16 +75,15 @@ popd
 
 mkdir /tmp/build-sys
 pushd /tmp/build-sys
-    ../"$P"/configure "${COMMON_CONFIG_ARGS[@]}" \
+    "$SRC_DIR"/configure "${COMMON_CONFIG_ARGS[@]}" \
         --prefix="$INSTALL_ROOT_SYSTEM" \
         --target-list="$SYSTEM_TARGETS"
-    ninja "${SYSTEM_TARGET_EXES[@]}"
     ninja install
 popd
 
 pushd "$INSTALL_ROOT"
-    tar --zstd -cvf "/out/qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
-        "qemu-user-riscv-$PV.ruyi-$RUYI_DATESTAMP"
-    tar --zstd -cvf "/out/qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
-        "qemu-system-riscv-$PV.ruyi-$RUYI_DATESTAMP"
+    tar --zstd -cvf "/out/qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
+        "qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
+    tar --zstd -cvf "/out/qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
+        "qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
 popd
