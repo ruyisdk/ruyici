@@ -18,7 +18,7 @@ upstream)
 xthead)
     P="qemu-6.1.0"
     PV="6.1.0"
-    RUYI_DATESTAMP=20231206
+    RUYI_DATESTAMP=20231207
     thead_commit_hash=03813c9fe8
     srcfile="qemu-xthead-$PV-g$thead_commit_hash.tar.zst"
     SRC_URI="https://mirror.iscas.ac.cn/ruyisdk/dist/$srcfile"
@@ -53,6 +53,12 @@ COMMON_CONFIG_ARGS=(
     --with-pkgversion="$pkgversion"
 )
 
+# static-pie breaks the xthead qemu, because apparently too much TLS is used
+# likely due to VLEN=1024 pushing the CPU state size too high
+STATIC_BUILD_CONFIG_ARGS=( --static )
+if [[ $build_flavor == xthead ]]; then
+    STATIC_BUILD_CONFIG_ARGS+=( --disable-pie )
+fi
 
 pushd /tmp
     wget "$SRC_URI"
@@ -64,9 +70,9 @@ SRC_DIR="/tmp/${srcfile%.tar.*}"
 mkdir /tmp/build-user
 pushd /tmp/build-user
     "$SRC_DIR"/configure "${COMMON_CONFIG_ARGS[@]}" \
+        "${STATIC_BUILD_CONFIG_ARGS[@]}" \
         --prefix="$INSTALL_ROOT_USER" \
-        --target-list="$USER_TARGETS" \
-        --static
+        --target-list="$USER_TARGETS"
     ninja install
 
     # firmware is unneeded in the static-user build
