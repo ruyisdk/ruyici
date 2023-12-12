@@ -49,6 +49,7 @@ CT_GDB_SRC_DEVEL=y
 CT_GDB_DEVEL_URL="https://github.com/T-Head-Semi/binutils-gdb.git"
 CT_GDB_DEVEL_BRANCH="xuantie-binutils-gdb-2.35-matrix"
 CT_GDB_V_10=y
+# CT_GDB_CROSS_PYTHON is not set
 # CT_GDB_GDBSERVER is not set
 CT_COMP_LIBS_CLOOG=y
 CT_COMP_LIBS_LIBELF=y
