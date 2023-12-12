@@ -13,7 +13,7 @@ CT_ARCH_64=y
 CT_ARCH_ARCH="rv64gc"
 CT_ARCH_ABI="lp64d"
 # CT_SHOW_CT_VERSION is not set
-CT_TOOLCHAIN_PKGVERSION="RuyiSDK 20231207 T-Head-Sources"
+CT_TOOLCHAIN_PKGVERSION="RuyiSDK 20231212 T-Head-Sources"
 CT_TOOLCHAIN_BUGURL="https://github.com/ruyisdk/ruyisdk/issues"
 CT_CANADIAN=y
 CT_HOST="riscv64-linux-gnu"
