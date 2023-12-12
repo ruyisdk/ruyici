@@ -5,7 +5,7 @@ set -e
 P="llvm-17.0.5"
 PV="17.0.5"
 RUYI_DATESTAMP=20231121
-ARCH=amd64
+ARCH="$1"
 SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
 
 USE_MEM=true
@@ -19,7 +19,7 @@ SRC_DIR="${TMP}/llvm-src"
 INSTALL_ROOT=${TMP}/prefix/"$P"
 
 HOST_STATIC_LIB_ROOT="/usr/lib/x86_64-linux-gnu"
-HOST_EXTRA_LIB_ROOT="/opt/morelibs/amd64/lib"
+HOST_EXTRA_LIB_ROOT="/opt/morelibs/${ARCH}/lib"
 
 CMAKE_ARGS=(
     -G Ninja

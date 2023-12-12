@@ -4,6 +4,8 @@ MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 RUYI_BUILDER_TAG="${RUYI_BUILDER_TAG:-ruyi-builder:ubuntu2004-20231202}"
 
+ARCH="${ARCH:-amd64}"
+
 die() {
 	echo "$@" >&2
 	exit 1
@@ -41,6 +43,7 @@ main() {
 	docker_args+=(
 		"${RUYI_BUILDER_TAG}"
 		ruyi-build-llvm-inner
+		"$ARCH"
 	)
 
 	docker run "${docker_args[@]}" || die "inner build pass failed"
