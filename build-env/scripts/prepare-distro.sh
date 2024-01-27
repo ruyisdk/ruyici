@@ -12,10 +12,27 @@ export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
 # HTTPS needs ca-certificates to work
-sed -i 's@http://archive\.ubuntu\.com/@http://mirrors.huaweicloud.com/@g' /etc/apt/sources.list
+# sed -i 's@http://archive\.ubuntu\.com/@http://mirrors.huaweicloud.com/@g' /etc/apt/sources.list
+# Also enable the cross arches for installing libraries via apt
+cat > /etc/apt/sources.list <<EOF
+deb [arch=amd64] http://mirrors.huaweicloud.com/ubuntu/ focal main restricted universe multiverse
+deb [arch=amd64] http://mirrors.huaweicloud.com/ubuntu/ focal-updates main restricted universe multiverse
+deb [arch=amd64] http://mirrors.huaweicloud.com/ubuntu/ focal-backports main restricted universe multiverse
+deb [arch=amd64] http://security.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
+
+deb-src http://mirrors.huaweicloud.com/ubuntu/ focal main restricted universe multiverse
+deb-src http://mirrors.huaweicloud.com/ubuntu/ focal-updates main restricted universe multiverse
+deb-src http://mirrors.huaweicloud.com/ubuntu/ focal-backports main restricted universe multiverse
+deb-src http://security.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
+
+deb [arch=arm64,riscv64] http://mirrors.huaweicloud.com/ubuntu-ports/ focal main restricted universe multiverse
+deb [arch=arm64,riscv64] http://mirrors.huaweicloud.com/ubuntu-ports/ focal-updates main restricted universe multiverse
+deb [arch=arm64,riscv64] http://mirrors.huaweicloud.com/ubuntu-ports/ focal-backports main restricted universe multiverse
+deb [arch=arm64,riscv64] http://mirrors.huaweicloud.com/ubuntu-ports/ focal-security main restricted universe multiverse
+EOF
 
 # For `apt build-dep`
-sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
+#sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
 
 # Non-interactive configuration of tzdata
 debconf-set-selections <<EOF
@@ -36,6 +53,9 @@ apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-17 main"
 
 apt-get update
 
+dpkg --add-architecture arm64
+dpkg --add-architecture riscv64
+
 pkgs=(
     # for ct-ng
     gcc g++ gperf bison flex texinfo help2man make libncurses5-dev
@@ -43,16 +63,19 @@ pkgs=(
     patch libstdc++6 rsync git meson ninja-build
 
     # for targetting riscv64 host
-    g++-riscv64-linux-gnu
+    crossbuild-essential-riscv64
+    pkg-config-riscv64-linux-gnu
 
     # for targetting aarch64 host
-    g++-aarch64-linux-gnu
+    crossbuild-essential-arm64
+    pkg-config-aarch64-linux-gnu
 
     # for ruyi-build driver
     schedtool
 
     # common goodies
-    zstd libzstd-dev clang-17 lld-17
+    zstd clang-17 lld-17
+    libzstd-dev
 
     # for LLVM
     build-essential cmake pkgconf
@@ -60,6 +83,11 @@ pkgs=(
 
     # for QEMU
     python3-venv
+
+    # TODO
+    # libzstd-dev:arm64 libzstd-dev:riscv64
+    # libedit-dev:arm64 libffi-dev:arm64 libjsoncpp-dev:arm64 libz3-dev:arm64 liblzma-dev:arm64
+    # libedit-dev:riscv64 libffi-dev:riscv64 libjsoncpp-dev:riscv64 libz3-dev:riscv64 liblzma-dev:riscv64
 )
 
 apt-get upgrade -qqy
@@ -67,5 +95,8 @@ apt-get install -y "${pkgs[@]}"
 
 # for QEMU
 apt-get build-dep -y qemu
+# TODO
+# apt-get build-dep -y -a arm64 qemu
+# apt-get build-dep -y -a riscv64 qemu
 
 apt-get clean
