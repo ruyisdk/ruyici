@@ -8,9 +8,9 @@ ARCH=amd64
 
 case "$build_flavor" in
 upstream)
-    P="qemu-8.1.2"
-    PV="8.1.2"
-    RUYI_DATESTAMP=20231121
+    P="qemu-8.2.0"
+    PV="8.2.0"
+    RUYI_DATESTAMP=20240127
     srcfile="${P}.tar.xz"
     SRC_URI="https://download.qemu.org/$srcfile"
     pkgversion="RuyiSDK $RUYI_DATESTAMP"
