@@ -3,8 +3,7 @@
 set -e
 
 build_flavor="$1"
-
-ARCH=amd64
+ARCH="${2:-amd64}"
 
 case "$build_flavor" in
 upstream)
@@ -25,9 +24,26 @@ xthead)
     pkgversion="T-Head commit $thead_commit_hash, RuyiSDK $RUYI_DATESTAMP"
     ;;
 *)
-    echo "usage: ruyi-build-qemu <upstream|xthead>" >&2
+    echo "usage: ruyi-build-qemu <upstream|xthead> [arch]" >&2
     exit 1
     ;;
+esac
+
+case "$ARCH" in
+amd64)
+	# we're compiling from amd64
+	CROSS_COMPILE_PREFIX=""
+	;;
+arm64)
+	CROSS_COMPILE_PREFIX="aarch64-linux-gnu-"
+	;;
+riscv64)
+	CROSS_COMPILE_PREFIX="riscv64-linux-gnu-"
+	;;
+*)
+	echo "invalid ARCH: choices are amd64, arm64 or riscv64" >&2
+	exit 1
+	;;
 esac
 
 USER_TARGETS="riscv32-linux-user,riscv64-linux-user"
@@ -52,6 +68,10 @@ COMMON_CONFIG_ARGS=(
     --disable-docs
     --with-pkgversion="$pkgversion"
 )
+
+if [[ -n $CROSS_COMPILE_PREFIX ]]; then
+	COMMON_CONFIG_ARGS+=( --cross-prefix="$CROSS_COMPILE_PREFIX" )
+fi
 
 # static-pie breaks the xthead qemu, because apparently too much TLS is used
 # likely due to VLEN=1024 pushing the CPU state size too high
