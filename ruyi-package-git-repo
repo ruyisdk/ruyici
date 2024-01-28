@@ -2,7 +2,11 @@
 
 MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-RUYI_BUILDER_TAG="${RUYI_BUILDER_TAG:-ghcr.io/ruyisdk/ruyi-builder:ubuntu2004-20240127}"
+source "$MY_DIR"/containers/_image_tag_base.sh
+
+if [[ -z $RUYI_BUILDER_TAG ]]; then
+	RUYI_BUILDER_TAG="$(image_tag_pkgbuilder_unified amd64)"
+fi
 
 die() {
 	echo "$@" >&2
