@@ -33,8 +33,8 @@ COPY --link ./builder/fix-multilib.patch /image/ct-ng-patches/fix-multilib.patch
 COPY --link ./builder/install-ct-ng.sh /image/install-ct-ng.sh
 RUN /image/install-ct-ng.sh
 
-COPY --from=sysroot-arm64 / /sysroot/arm64
-COPY --from=sysroot-riscv64 / /sysroot/riscv64
+COPY --from=sysroot-arm64 --link / /usr/aarch64-linux-gnu
+COPY --from=sysroot-riscv64 --link / /usr/riscv64-linux-gnu
 
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b

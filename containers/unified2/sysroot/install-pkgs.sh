@@ -53,6 +53,12 @@ if "$IS_NATIVE"; then
 
         # for QEMU
         python3-venv
+
+        # for DynamoRIO
+        python3.11-dev python3.11-venv
+
+        # useful debugging tools etc.
+        ccache vim strace
     )
 fi
 
@@ -116,13 +122,15 @@ fi
 
 apt-get install -y "${pkgs[@]}"
 
-# symlink LLVM tools
 if "$IS_NATIVE"; then
+    # symlink LLVM tools
     pushd /usr/bin
         ln -s clang-"$LLVM_MAJOR" clang
         ln -s clang++-"$LLVM_MAJOR" clang++
         ln -s ld.lld-"$LLVM_MAJOR" ld.lld
     popd
+
+    # move away the minimal cross sysroots to make place for ours
+    mv /usr/aarch64-linux-gnu /usr/aarch64-linux-gnu.orig
+    mv /usr/riscv64-linux-gnu /usr/riscv64-linux-gnu.orig
 fi
-
-

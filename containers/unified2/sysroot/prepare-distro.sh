@@ -61,6 +61,9 @@ if "$IS_NATIVE"; then
     # And recent LLVM
     wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
     apt-add-repository "deb http://apt.llvm.org/${DISTRIB_CODENAME}/ llvm-toolchain-${DISTRIB_CODENAME}-${LLVM_MAJOR} main"
+
+    # And recent Python
+    add-apt-repository ppa:deadsnakes/ppa
 fi
 
 apt-get upgrade -qqy
