@@ -101,6 +101,19 @@ pkgs+=(
     libpng-dev
 )
 
+# for DynamoRIO
+# see https://dynamorio.org/page_building.html
+pkgs+=(
+    # zlib1g-dev  # already unconditionally included for qemu
+    libsnappy-dev
+    liblz4-dev
+)
+
+if [[ $ARCH != riscv64 ]]; then
+    # not present in ubuntu:20.04
+    pkgs+=( libunwind-dev )
+fi
+
 apt-get install -y "${pkgs[@]}"
 
 # symlink LLVM tools
