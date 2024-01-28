@@ -4,12 +4,13 @@ set -e
 
 build_flavor="$1"
 ARCH="${2:-amd64}"
+build_variants="${3:-both}"
 
 case "$build_flavor" in
 upstream)
     P="qemu-8.2.0"
     PV="8.2.0"
-    RUYI_DATESTAMP=20240127
+    RUYI_DATESTAMP=20240128
     srcfile="${P}.tar.xz"
     SRC_URI="https://download.qemu.org/$srcfile"
     pkgversion="RuyiSDK $RUYI_DATESTAMP"
@@ -24,7 +25,7 @@ xthead)
     pkgversion="T-Head commit $thead_commit_hash, RuyiSDK $RUYI_DATESTAMP"
     ;;
 *)
-    echo "usage: ruyi-build-qemu <upstream|xthead> [arch]" >&2
+    echo "usage: ruyi-build-qemu <upstream|xthead> [arch] [both|user|system]" >&2
     exit 1
     ;;
 esac
@@ -42,6 +43,25 @@ riscv64)
 	;;
 *)
 	echo "invalid ARCH: choices are amd64, arm64 or riscv64" >&2
+	exit 1
+	;;
+esac
+
+case "$build_variants" in
+both)
+	BUILD_USER=true
+	BUILD_SYSTEM=true
+	;;
+user)
+	BUILD_USER=true
+	BUILD_SYSTEM=false
+	;;
+system)
+	BUILD_USER=false
+	BUILD_SYSTEM=true
+	;;
+*)
+	echo "invalid build variants: choices are user, system or both (default)" >&2
 	exit 1
 	;;
 esac
@@ -80,6 +100,29 @@ if [[ $build_flavor == xthead ]]; then
     STATIC_BUILD_CONFIG_ARGS+=( --disable-pie )
 fi
 
+QEMU_SYSTEM_CONFIG_ARGS=(
+	--disable-gnutls  # only 3.6.13 in ubuntu:20.04 but wants >=3.6.14
+	--disable-nettle  # not ubiquitous
+	# no static libs in ubuntu:20.04, not ubiquitous on various distros in case
+	# of dynamic linking (which is currently the case for qemu-system builds),
+	# other build failures, or just too much hassle to support for now
+	# (will try to re-add if requested)
+	--disable-bpf  # no ubiquitously supported soversion
+	--disable-curl  # many indirect deps of libcurl don't have static libs available
+	--disable-gcrypt
+	--disable-libiscsi
+	--disable-libnfs
+	--disable-libssh  # problems with gssapi libs
+	--disable-libudev
+	--disable-opengl  # epoxy, GL, virglrenderer etc.
+	--disable-rbd
+	--disable-rdma
+	--disable-selinux
+	--disable-vnc-jpeg  # no ubiquitously supported soversion
+	--disable-vnc-sasl
+	--disable-xkbcommon  # no static lib
+)
+
 pushd /tmp
     wget "$SRC_URI"
     tar xf "$srcfile"
@@ -87,6 +130,7 @@ popd
 
 SRC_DIR="/tmp/${srcfile%.tar.*}"
 
+if "$BUILD_USER"; then
 mkdir /tmp/build-user
 pushd /tmp/build-user
     "$SRC_DIR"/configure "${COMMON_CONFIG_ARGS[@]}" \
@@ -98,18 +142,24 @@ pushd /tmp/build-user
     # firmware is unneeded in the static-user build
     rm -rf "$INSTALL_ROOT_USER/share"
 popd
+fi
 
+if "$BUILD_SYSTEM"; then
 mkdir /tmp/build-sys
 pushd /tmp/build-sys
     "$SRC_DIR"/configure "${COMMON_CONFIG_ARGS[@]}" \
+        "${QEMU_SYSTEM_CONFIG_ARGS[@]}" \
         --prefix="$INSTALL_ROOT_SYSTEM" \
         --target-list="$SYSTEM_TARGETS"
     ninja install
 popd
+fi
 
 pushd "$INSTALL_ROOT"
+    "$BUILD_USER" && \
     tar --zstd -cvf "/out/qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
         "qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
+    "$BUILD_SYSTEM" && \
     tar --zstd -cvf "/out/qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
         "qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
 popd
