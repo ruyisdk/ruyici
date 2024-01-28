@@ -11,6 +11,56 @@ MAKEOPTS=(
     -j "$(nproc)"
 )
 
+python3 -m venv /tmp/meson-venv
+. /tmp/meson-venv/bin/activate
+pip install meson packaging
+
+cat > /tmp/meson.amd64.ini <<EOF
+[binaries]
+c = 'clang'
+cpp = 'clang++'
+
+[properties]
+c_args = ['-O2', '-pipe', '-fPIC']
+cpp_args = ['-O2', '-pipe', '-fPIC']
+EOF
+
+cat > /tmp/meson.arm64.ini <<EOF
+[binaries]
+c = ['clang', '--target=aarch64-linux-gnu']
+cpp = ['clang++', '--target=aarch64-linux-gnu']
+c_ld = 'lld'
+cpp_ld = 'lld'
+
+[properties]
+c_args = ['-O2', '-pipe', '-fPIC']
+cpp_args = ['-O2', '-pipe', '-fPIC']
+
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
+EOF
+
+cat > /tmp/meson.riscv64.ini <<EOF
+[binaries]
+c = ['clang', '--target=riscv64-linux-gnu']
+cpp = ['clang++', '--target=riscv64-linux-gnu']
+c_ld = 'lld'
+cpp_ld = 'lld'
+
+[properties]
+c_args = ['-O2', '-pipe', '-fPIC']
+cpp_args = ['-O2', '-pipe', '-fPIC']
+
+[host_machine]
+system = 'linux'
+cpu_family = 'riscv64'
+cpu = 'riscv64'
+endian = 'little'
+EOF
+
 INSTALL_ROOT_AMD64=/opt/morelibs/amd64
 INSTALL_ROOT_ARM64=/opt/morelibs/arm64
 INSTALL_ROOT_RISCV64=/opt/morelibs/riscv64
@@ -25,14 +75,19 @@ mkdir -p "$INSTALL_ROOT_RISCV64"
 ZLIB_NG_PV=2.1.4
 ZLIB_NG_SRC_URI="https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_NG_PV}.tar.gz"
 
-NCURSES_PV=6.3
-NCURSES_SRC_URI="https://invisible-island.net/datafiles/release/ncurses.tar.gz"
+NCURSES_PV=6.4
+NCURSES_SRC_URI="https://invisible-mirror.net/archives/ncurses/ncurses-6.4.tar.gz"
+
+GLIB_PV=2.79.1
+GLIB_SRC_URI="https://download.gnome.org/sources/glib/2.79/glib-2.79.1.tar.xz"
 
 pushd /tmp
     wget -O "zlib-ng-${ZLIB_NG_PV}.tar.gz" "$ZLIB_NG_SRC_URI"
     wget "$NCURSES_SRC_URI"
+    wget "$GLIB_SRC_URI"
     tar xf "zlib-ng-${ZLIB_NG_PV}.tar.gz"
-    tar xf ncurses.tar.gz
+    tar xf "ncurses-${NCURSES_PV}.tar.gz"
+    tar xf "glib-${GLIB_PV}.tar.xz"
 popd
 
 #
@@ -139,3 +194,50 @@ pushd /tmp/ncurses-build.riscv64
 popd
 
 rm -rf /tmp/ncurses-build.*
+
+#
+# glib
+#
+
+GLIB_SRC_DIR="/tmp/glib-$GLIB_PV"
+mkdir /tmp/glib-build.{amd64,arm64,riscv64}
+
+GLIB_COMMON_CONF_ARGS=(
+    -Ddocumentation=false
+)
+
+pushd "$GLIB_SRC_DIR"
+    # source preparation taken from Gentoo
+    sed -i -e '/subdir.*tests/d' {.,gio,glib}/meson.build
+    sed -i -e '/subdir.*fuzzing/d' meson.build
+
+    # configure
+    meson setup /tmp/glib-build.amd64 --native-file /tmp/meson.amd64.ini \
+        --prefix "$INSTALL_ROOT_AMD64" \
+        "${GLIB_COMMON_CONF_ARGS[@]}"
+    meson setup /tmp/glib-build.arm64 --cross-file /tmp/meson.arm64.ini \
+        --prefix "$INSTALL_ROOT_ARM64" \
+        "${GLIB_COMMON_CONF_ARGS[@]}"
+    meson setup /tmp/glib-build.riscv64 --cross-file /tmp/meson.riscv64.ini \
+        --prefix "$INSTALL_ROOT_RISCV64" \
+        "${GLIB_COMMON_CONF_ARGS[@]}"
+popd
+
+pushd /tmp/glib-build.amd64
+    ninja
+    ninja install
+popd
+
+pushd /tmp/glib-build.arm64
+    ninja
+    ninja install
+popd
+
+# TODO: fails to build bundled libffi due to seemingly missing definition for
+# max_align_t (which should not happen)
+#pushd /tmp/glib-build.riscv64
+#    ninja
+#    ninja install
+#popd
+
+rm -rf /tmp/glib-build.*
