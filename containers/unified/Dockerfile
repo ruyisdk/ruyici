@@ -33,8 +33,9 @@ COPY --link ./builder/fix-multilib.patch /image/ct-ng-patches/fix-multilib.patch
 COPY --link ./builder/install-ct-ng.sh /image/install-ct-ng.sh
 RUN /image/install-ct-ng.sh
 
-COPY --from=sysroot-arm64 --link / /usr/aarch64-linux-gnu
-COPY --from=sysroot-riscv64 --link / /usr/riscv64-linux-gnu
+COPY --from=sysroot-arm64 --link / /sysroot/arm64
+COPY --from=sysroot-riscv64 --link / /sysroot/riscv64
 
+RUN groupadd -g "$BUILDER_GID" b && useradd -d /home/b -m -g "$BUILDER_GID" -u "$BUILDER_UID" -s /bin/bash b
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b

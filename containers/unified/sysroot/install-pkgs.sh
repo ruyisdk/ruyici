@@ -129,8 +129,4 @@ if "$IS_NATIVE"; then
         ln -s clang++-"$LLVM_MAJOR" clang++
         ln -s ld.lld-"$LLVM_MAJOR" ld.lld
     popd
-
-    # move away the minimal cross sysroots to make place for ours
-    mv /usr/aarch64-linux-gnu /usr/aarch64-linux-gnu.orig
-    mv /usr/riscv64-linux-gnu /usr/riscv64-linux-gnu.orig
 fi

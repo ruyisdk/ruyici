@@ -62,12 +62,6 @@ riscv64)
     ;;
 esac
 
-# Workaround faulty cross sysroot layout
-# FIXME: remove after next builder image bump
-mkdir /sysroot
-mv /usr/riscv64-linux-gnu /sysroot/riscv64
-mv /usr/riscv64-linux-gnu.orig /usr/riscv64-linux-gnu
-
 # TODO: linking fails for now, turns out these are optional
 rm /sysroot/riscv64/usr/lib/riscv64-linux-gnu/liblz4.*
 rm /sysroot/riscv64/usr/lib/riscv64-linux-gnu/libsnappy.*
