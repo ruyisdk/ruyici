@@ -36,5 +36,6 @@ RUN /image/install-ct-ng.sh
 COPY --from=sysroot-arm64 --link / /usr/aarch64-linux-gnu
 COPY --from=sysroot-riscv64 --link / /usr/riscv64-linux-gnu
 
+RUN groupadd -g "$BUILDER_GID" b && useradd -d /home/b -m -g "$BUILDER_GID" -u "$BUILDER_UID" -s /bin/bash b
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b
