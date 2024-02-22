@@ -33,10 +33,10 @@ main() {
 		-v "$MY_DIR/prefix":/opt/ruyi
 		-v "$MY_DIR/src":/src
 		-v "$MY_DIR/work":/work
-		-v "$MY_DIR/ruyi-build-inner":/usr/local/bin/ruyi-build-inner:ro
+		-v "$MY_DIR/ruyi-build-ctng-inner":/usr/local/bin/ruyi-build-ctng-inner:ro
 		-v "$(realpath "$config")":/tmp/input.defconfig:ro
 		"${RUYI_BUILDER_TAG}"
-		ruyi-build-inner /tmp/input.defconfig
+		ruyi-build-ctng-inner /tmp/input.defconfig
 	)
 	docker run "${docker_args[@]}" || die "inner build pass failed"
 }
