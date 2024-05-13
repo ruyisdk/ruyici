@@ -1,0 +1,61 @@
+From 6fe4779ac4b1874c995345e3eabd89cb1a05fbdf Mon Sep 17 00:00:00 2001
+From: Tom de Vries <tdevries@suse.de>
+Date: Sat, 24 Feb 2024 11:00:20 +0100
+Subject: [PATCH] [gdb/build] Fix static cast of virtual base
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+With this change in bfd/development.sh:
+...
+-development=true
++development=false
+...
+we run into:
+...
+In file included from tui-data.h:28:0,
+                 from tui-command.c:24:
+gdb-checked-static-cast.h: In instantiation of \
+  ‘T gdb::checked_static_cast(V*) [with T = tui_cmd_window*; V = tui_win_info]’:
+tui-command.c:65:15:   required from here
+gdb-checked-static-cast.h:63:14: error: cannot convert from pointer to base \
+  class ‘tui_win_info’ to pointer to derived class ‘tui_cmd_window’ because \
+  the base is virtual
+   T result = static_cast<T> (v);
+              ^~~~~~~~~~~~~~~~~~
+...
+
+Fix this by using dynamic_cast instead of gdb::checked_static_cast in
+TUI_CMD_WIN and TUI_STATUS_WIN.
+
+Tested on x86_64-linux, with development set to false.
+
+Reported-By: Robert Xiao <spam_hole@shaw.ca>
+Reported-By: Simon Marchi <simark@simark.ca>
+Approved-By: Tom Tromey <tom@tromey.com>
+
+PR build/31399
+Bug: https://sourceware.org/bugzilla/show_bug.cgi?id=31399
+---
+ gdb/tui/tui-data.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gdb/tui/tui-data.h b/gdb/tui/tui-data.h
+index 1714f5ae455..90ab01f79af 100644
+--- a/gdb/tui/tui-data.h
++++ b/gdb/tui/tui-data.h
+@@ -296,9 +296,9 @@ extern struct tui_win_info *tui_win_list[MAX_MAJOR_WINDOWS];
+ #define TUI_DATA_WIN \
+   (gdb::checked_static_cast<tui_data_window *> (tui_win_list[DATA_WIN]))
+ #define TUI_CMD_WIN \
+-  (gdb::checked_static_cast<tui_cmd_window *> (tui_win_list[CMD_WIN]))
++  (dynamic_cast<tui_cmd_window *> (tui_win_list[CMD_WIN]))
+ #define TUI_STATUS_WIN \
+-  (gdb::checked_static_cast<tui_status_window *> (tui_win_list[STATUS_WIN]))
++  (dynamic_cast<tui_status_window *> (tui_win_list[STATUS_WIN]))
+ 
+ /* All the windows that are currently instantiated, in layout
+    order.  */
+-- 
+2.44.0
+
