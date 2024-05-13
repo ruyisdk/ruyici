@@ -33,6 +33,7 @@ main() {
 		-v "$MY_DIR/prefix":/opt/ruyi
 		-v "$MY_DIR/src":/src
 		-v "$MY_DIR/work":/work
+		-v "$MY_DIR/toolchain-patches":/patches:ro
 		-v "$MY_DIR/ruyi-build-ctng-inner":/usr/local/bin/ruyi-build-ctng-inner:ro
 		-v "$(realpath "$config")":/tmp/input.defconfig:ro
 		"${RUYI_BUILDER_TAG}"
