@@ -2,8 +2,8 @@
 
 set -e
 
-ARCH="$1"
-CONFIG_FILE="$2"
+CONFIG_FILE="$1"
+ARCH="$2"
 
 # e.g.:
 #
@@ -12,9 +12,17 @@ CONFIG_FILE="$2"
 # RUYI_DATESTAMP=yyyymmdd
 # SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
 source "$CONFIG_FILE"
+: ${TAR_STRIP_COMPONENTS:=1}
+: ${USE_MEM:=true}
 
-USE_MEM=true
-if $USE_MEM; then
+echo "P=$P"
+echo "PV=$PV"
+echo "RUYI_DATESTAMP=$RUYI_DATESTAMP"
+echo "SRC_URI=$SRC_URI"
+echo "TAR_STRIP_COMPONENTS=$TAR_STRIP_COMPONENTS"
+echo "USE_MEM=$USE_MEM"
+
+if "$USE_MEM"; then
     TMP=/tmp/mem  # mounted by outer script
 else
     TMP=/tmp
@@ -24,7 +32,11 @@ SRC_DIR="${TMP}/llvm-src"
 INSTALL_ROOT=${TMP}/prefix/"$P"
 
 HOST_STATIC_LIB_ROOT="/usr/lib/x86_64-linux-gnu"
-HOST_EXTRA_LIB_ROOT="/opt/morelibs/${ARCH}/lib"
+case "$ARCH" in
+    amd64) HOST_EXTRA_LIB_ROOT="$HOST_STATIC_LIB_ROOT" ;;
+    arm64) HOST_EXTRA_LIB_ROOT="/sysroot/arm64/lib/aarch64-linux-gnu" ;;
+    riscv64) HOST_EXTRA_LIB_ROOT="/sysroot/riscv64/lib/riscv64-linux-gnu" ;;
+esac
 
 CMAKE_ARGS=(
     -G Ninja
@@ -66,10 +78,12 @@ CMAKE_ARGS=(
     #-DLLVM_ENABLE_LIBXML2=FORCE_ON
     #-DLIBXML2_LIBRARY="${HOST_STATIC_LIB_ROOT}/libxml2.a"
     -DLLVM_ENABLE_LIBXML2=OFF
-    -DLLVM_ENABLE_TERMINFO=FORCE_ON
-    -DTerminfo_LIBRARIES="${HOST_EXTRA_LIB_ROOT}/libtinfow.a"
-    -DLLVM_ENABLE_ZLIB=FORCE_ON
-    -DZLIB_LIBRARY="${HOST_EXTRA_LIB_ROOT}/libz.a"
+    #-DLLVM_ENABLE_TERMINFO=FORCE_ON
+    #-DTerminfo_LIBRARIES="${HOST_EXTRA_LIB_ROOT}/libtinfo.a"
+    -DLLVM_ENABLE_TERMINFO=OFF  # TODO: PIC link failures; check later
+    #-DLLVM_ENABLE_ZLIB=FORCE_ON
+    #-DZLIB_LIBRARY="${HOST_EXTRA_LIB_ROOT}/libz.a"
+    -DLLVM_ENABLE_ZLIB=OFF  # TODO: PIC link failures; check later
     -DLLVM_ENABLE_ZSTD=FORCE_ON
     -Dzstd_LIBRARY="${HOST_STATIC_LIB_ROOT}/libzstd.a"
 
@@ -83,7 +97,8 @@ popd
 
 mkdir "$SRC_DIR"
 pushd "$SRC_DIR"
-    tar xf /tmp/src.tar.xz --strip-components=1
+    tar xf /tmp/src.tar.xz --strip-components="${TAR_STRIP_COMPONENTS:=1}"
+    ls -l
 popd
 
 mkdir "$TMP/build"
