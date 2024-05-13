@@ -2,11 +2,16 @@
 
 set -e
 
-P="llvm-17.0.5"
-PV="17.0.5"
-RUYI_DATESTAMP=20231121
 ARCH="$1"
-SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
+CONFIG_FILE="$2"
+
+# e.g.:
+#
+# P="llvm-x.y.z"
+# PV="x.y.z"
+# RUYI_DATESTAMP=yyyymmdd
+# SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
+source "$CONFIG_FILE"
 
 USE_MEM=true
 if $USE_MEM; then

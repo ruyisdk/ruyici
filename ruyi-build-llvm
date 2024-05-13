@@ -21,7 +21,8 @@ ensure_dir() {
 }
 
 main() {
-	local pkg="$1"
+	local cfg="$1"
+	local pkg="$2"
 
 	ensure_dir "$MY_DIR/out"
 	ensure_dir "$MY_DIR/work"
@@ -35,6 +36,7 @@ main() {
 		-v "$MY_DIR/out":/out
 		-v "$MY_DIR/work":/work
 		-v "$MY_DIR/ruyi-build-llvm-inner":/usr/local/bin/ruyi-build-llvm-inner:ro
+		-v "$(realpath "$cfg")":/tmp/config.sh:ro
 		-v "$TMP_MEM_DIR":/tmp/mem
 	)
 
@@ -47,6 +49,7 @@ main() {
 	docker_args+=(
 		"${RUYI_BUILDER_TAG}"
 		ruyi-build-llvm-inner
+		/tmp/config.sh
 		"$ARCH"
 	)
 
