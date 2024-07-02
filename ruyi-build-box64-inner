@@ -73,8 +73,8 @@ pushd "$SRC_DIR"
     # upstream doesn't want us to be able to install when building on x86
     # but we have to because native builds on especially riscv64 are too slow
     patch -Np1 <<EOF
---- a/CMakeLists.txt	2024-05-21 23:33:16.000000000 +0800
-+++ b/CMakeLists.txt	2024-07-02 18:39:27.872918714 +0800
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
 @@ -933,7 +933,7 @@
    add_definitions(-DCONFIG_64BIT)
  endif()
@@ -93,6 +93,16 @@ pushd "$SRC_DIR"
  
  if(NOT TARGET uninstall)
      configure_file(
+--- a/src/dynarec/rv64/dynarec_rv64_private.h
++++ b/src/dynarec/rv64/dynarec_rv64_private.h
+@@ -150,6 +150,7 @@ void add_next(dynarec_rv64_t *dyn, uintptr_t addr);
+ uintptr_t get_closest_next(dynarec_rv64_t *dyn, uintptr_t addr);
+ void add_jump(dynarec_rv64_t *dyn, int ninst);
+ int get_first_jump(dynarec_rv64_t *dyn, int next);
++int get_first_jump_addr(dynarec_rv64_t *dyn, uintptr_t next);
+ int is_nops(dynarec_rv64_t *dyn, uintptr_t addr, int n);
+ int is_instructions(dynarec_rv64_t *dyn, uintptr_t addr, int n);
+ 
 EOF
 
 popd
@@ -105,5 +115,5 @@ pushd "$TMP/build"
 popd
 
 pushd "$INSTALL_ROOT"/..
-    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP"."$ARCH".tar.zst ./"$P"
+    tar --zstd -cvf /out/"$P"."$ARCH".tar.zst ./"$P"
 popd
