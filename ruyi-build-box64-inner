@@ -1,0 +1,119 @@
+#!/bin/bash
+
+set -e
+
+CONFIG_FILE="$1"
+ARCH="$2"
+
+# e.g.:
+#
+# P="box64-x.y.z"
+# PV="x.y.z"
+# RUYI_DATESTAMP=yyyymmdd
+# SRC_URI="https://github.com/ptitSeb/box64/archive/refs/tags/v${PV}.tar.gz"
+source "$CONFIG_FILE"
+: ${TAR_STRIP_COMPONENTS:=1}
+: ${USE_MEM:=true}
+
+echo "ARCH=$ARCH"
+echo "P=$P"
+echo "PV=$PV"
+echo "RUYI_DATESTAMP=$RUYI_DATESTAMP"
+echo "SRC_URI=$SRC_URI"
+echo "TAR_STRIP_COMPONENTS=$TAR_STRIP_COMPONENTS"
+echo "USE_MEM=$USE_MEM"
+
+if "$USE_MEM"; then
+    TMP=/tmp/mem  # mounted by outer script
+else
+    TMP=/tmp
+fi
+
+SRC_DIR="${TMP}/box64-src"
+INSTALL_ROOT=${TMP}/prefix/"$P"
+
+CMAKE_ARGS=(
+    -G Ninja
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX=/
+)
+
+case "$ARCH" in
+    amd64)
+        # box64 is used to emulate amd64, so don't allow building for amd64
+        echo box64 is not buildable for amd64 >&2
+        exit 1
+        ;;
+    arm64)
+        CMAKE_ARGS+=(
+            -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc"
+            -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++"
+            -DARM64=ON
+        )
+        ;;
+    riscv64)
+        CMAKE_ARGS+=(
+            -DCMAKE_C_COMPILER="riscv64-linux-gnu-gcc"
+            -DCMAKE_CXX_COMPILER="riscv64-linux-gnu-g++"
+            -DRV64=ON
+        )
+        ;;
+esac
+
+
+pushd /tmp
+    [[ -e src.tar.xz ]] || wget -O src.tar.xz "$SRC_URI"
+popd
+
+mkdir "$SRC_DIR"
+pushd "$SRC_DIR"
+    tar xf /tmp/src.tar.xz --strip-components="${TAR_STRIP_COMPONENTS:=1}"
+    ls -l
+
+    # upstream doesn't want us to be able to install when building on x86
+    # but we have to because native builds on especially riscv64 are too slow
+    patch -Np1 <<EOF
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -933,7 +933,7 @@
+   add_definitions(-DCONFIG_64BIT)
+ endif()
+ 
+-if(NOT _x86 AND NOT _x86_64)
++# if(NOT _x86 AND NOT _x86_64)
+   if(NOT TERMUX)
+    install(TARGETS ${BOX64}
+     RUNTIME DESTINATION bin)
+@@ -987,7 +987,7 @@
+         install(FILES ${CMAKE_SOURCE_DIR}/x64lib/libmbedcrypto.so.3 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
+ 	endif()
+    endif()
+-endif()
++# endif()
+ 
+ if(NOT TARGET uninstall)
+     configure_file(
+--- a/src/dynarec/rv64/dynarec_rv64_private.h
++++ b/src/dynarec/rv64/dynarec_rv64_private.h
+@@ -150,6 +150,7 @@ void add_next(dynarec_rv64_t *dyn, uintptr_t addr);
+ uintptr_t get_closest_next(dynarec_rv64_t *dyn, uintptr_t addr);
+ void add_jump(dynarec_rv64_t *dyn, int ninst);
+ int get_first_jump(dynarec_rv64_t *dyn, int next);
++int get_first_jump_addr(dynarec_rv64_t *dyn, uintptr_t next);
+ int is_nops(dynarec_rv64_t *dyn, uintptr_t addr, int n);
+ int is_instructions(dynarec_rv64_t *dyn, uintptr_t addr, int n);
+ 
+EOF
+
+popd
+
+mkdir "$TMP/build"
+pushd "$TMP/build"
+    cmake "$SRC_DIR" "${CMAKE_ARGS[@]}"
+    ninja
+    DESTDIR="$INSTALL_ROOT" ninja install
+popd
+
+pushd "$INSTALL_ROOT"/..
+    tar --zstd -cvf /out/"$P"."$ARCH".tar.zst ./"$P"
+popd

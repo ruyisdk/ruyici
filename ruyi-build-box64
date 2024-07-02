@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# usage: ARCH=riscv64 ./ruyi-build-box64 ./box64-configs/xxx.config
+
+MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+ARCH="${ARCH:-amd64}"
+
+source "$MY_DIR"/containers/_image_tag_base.sh
+
+if [[ -z $RUYI_BUILDER_TAG ]]; then
+	RUYI_BUILDER_TAG="$(image_tag_pkgbuilder_unified amd64)"
+fi
+
+die() {
+	echo "$@" >&2
+	exit 1
+}
+
+ensure_dir() {
+	local path="$1"
+	[[ -d "$path" ]] || mkdir "$path"
+}
+
+main() {
+	local cfg="$1"
+	local pkg="$2"
+
+	ensure_dir "$MY_DIR/out"
+	ensure_dir "$MY_DIR/work"
+
+	# assume /tmp is tmpfs for now
+	TMP_MEM_DIR="$(mktemp -d)"
+
+	local docker_args=(
+		--rm
+		-ti
+		-v "$MY_DIR/out":/out
+		-v "$MY_DIR/work":/work
+		-v "$MY_DIR/ruyi-build-box64-inner":/usr/local/bin/ruyi-build-box64-inner:ro
+		-v "$(realpath "$cfg")":/tmp/config.sh:ro
+		-v "$TMP_MEM_DIR":/tmp/mem
+	)
+
+	if [[ -n $pkg ]]; then
+		docker_args+=(
+			-v "$pkg":/tmp/src.tar.xz:ro
+		)
+	fi
+
+	docker_args+=(
+		"${RUYI_BUILDER_TAG}"
+		ruyi-build-box64-inner
+		/tmp/config.sh
+		"$ARCH"
+	)
+
+	docker run "${docker_args[@]}" || die "inner build pass failed"
+}
+
+main "$@"
