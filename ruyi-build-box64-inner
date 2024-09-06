@@ -70,41 +70,7 @@ pushd "$SRC_DIR"
     tar xf /tmp/src.tar.xz --strip-components="${TAR_STRIP_COMPONENTS:=1}"
     ls -l
 
-    # upstream doesn't want us to be able to install when building on x86
-    # but we have to because native builds on especially riscv64 are too slow
-    patch -Np1 <<EOF
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -933,7 +933,7 @@
-   add_definitions(-DCONFIG_64BIT)
- endif()
- 
--if(NOT _x86 AND NOT _x86_64)
-+# if(NOT _x86 AND NOT _x86_64)
-   if(NOT TERMUX)
-    install(TARGETS ${BOX64}
-     RUNTIME DESTINATION bin)
-@@ -987,7 +987,7 @@
-         install(FILES ${CMAKE_SOURCE_DIR}/x64lib/libmbedcrypto.so.3 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
- 	endif()
-    endif()
--endif()
-+# endif()
- 
- if(NOT TARGET uninstall)
-     configure_file(
---- a/src/dynarec/rv64/dynarec_rv64_private.h
-+++ b/src/dynarec/rv64/dynarec_rv64_private.h
-@@ -150,6 +150,7 @@ void add_next(dynarec_rv64_t *dyn, uintptr_t addr);
- uintptr_t get_closest_next(dynarec_rv64_t *dyn, uintptr_t addr);
- void add_jump(dynarec_rv64_t *dyn, int ninst);
- int get_first_jump(dynarec_rv64_t *dyn, int next);
-+int get_first_jump_addr(dynarec_rv64_t *dyn, uintptr_t next);
- int is_nops(dynarec_rv64_t *dyn, uintptr_t addr, int n);
- int is_instructions(dynarec_rv64_t *dyn, uintptr_t addr, int n);
- 
-EOF
-
+    SRC_PREPARE
 popd
 
 mkdir "$TMP/build"
