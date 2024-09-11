@@ -20,8 +20,11 @@ FROM --platform=linux/amd64 ubuntu:20.04
 ARG BUILDARCH
 ARG BUILDER_UID=1000
 ARG BUILDER_GID=1000
-ARG CT_NG_VERSION=1.26.0
-ARG CT_NG_DOWNLOAD_URL_BASE="http://crosstool-ng.org/download/crosstool-ng"
+ARG CT_NG_GIT_BUILD=true
+ARG CT_NG_GIT_BRANCH=master
+ARG CT_NG_GIT_REPO=https://github.com/crosstool-ng/crosstool-ng.git
+# ARG CT_NG_VERSION=1.26.0
+# ARG CT_NG_DOWNLOAD_URL_BASE="http://crosstool-ng.org/download/crosstool-ng"
 ARG LLVM_MAJOR=17
 
 COPY --link ./sysroot/prepare-distro.sh /image/prepare-distro.sh
