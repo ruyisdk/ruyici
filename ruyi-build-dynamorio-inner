@@ -4,9 +4,9 @@ set -e
 
 ARCH="${1:-amd64}"
 
-P="dynamorio-10.0.19748"
-PV="10.0.19748"
-RUYI_DATESTAMP=20240128
+P="dynamorio-10.93.19979"
+PV="10.93.19979"
+RUYI_DATESTAMP=20240914
 
 case "$ARCH" in
 amd64|arm64|riscv64)
