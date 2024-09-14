@@ -17,7 +17,7 @@ amd64|arm64|riscv64)
 	;;
 esac
 
-OUT_P="dynamorio-riscv-$PV.ruyi-$RUYI_DATESTAMP"
+OUT_P="dynamorio-riscv-$PV-ruyi.$RUYI_DATESTAMP"
 INSTALL_ROOT="/tmp/prefix/$OUT_P"
 
 pushd /tmp
