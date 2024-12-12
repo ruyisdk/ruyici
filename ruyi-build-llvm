@@ -4,6 +4,7 @@ MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ARCH="${ARCH:-amd64}"
 
+# shellcheck source-path=SOURCE_DIR
 source "$MY_DIR"/containers/_image_tag_base.sh
 
 if [[ -z $RUYI_BUILDER_TAG ]]; then

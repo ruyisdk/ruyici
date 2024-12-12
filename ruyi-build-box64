@@ -2,6 +2,7 @@
 
 # usage: ARCH=riscv64 ./ruyi-build-box64 ./box64-configs/xxx.config
 
+# shellcheck source-path=SOURCE_DIR
 MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ARCH="${ARCH:-amd64}"

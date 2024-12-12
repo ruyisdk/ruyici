@@ -12,8 +12,8 @@ ARCH="$2"
 # RUYI_DATESTAMP=yyyymmdd
 # SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
 source "$CONFIG_FILE"
-: ${TAR_STRIP_COMPONENTS:=1}
-: ${USE_MEM:=true}
+: "${TAR_STRIP_COMPONENTS:=1}"
+: "${USE_MEM:=true}"
 
 echo "P=$P"
 echo "PV=$PV"
@@ -48,7 +48,7 @@ CMAKE_ARGS=(
     -DCMAKE_CXX_FLAGS="-O2 -pipe -fPIC"
     -DLLVM_USE_LINKER=lld
     -DLLVM_ENABLE_LTO=Thin
-    -DLLVM_PARALLEL_COMPILE_JOBS=$(nproc)
+    -DLLVM_PARALLEL_COMPILE_JOBS="$(nproc)"
     -DLLVM_PARALLEL_LINK_JOBS=4
     -DLLVM_SOURCE_PREFIX="$SRC_DIR"
     -DLLVM_USE_RELATIVE_PATHS_IN_FILES=ON

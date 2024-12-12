@@ -12,8 +12,8 @@ ARCH="$2"
 # RUYI_DATESTAMP=yyyymmdd
 # SRC_URI="https://github.com/ptitSeb/box64/archive/refs/tags/v${PV}.tar.gz"
 source "$CONFIG_FILE"
-: ${TAR_STRIP_COMPONENTS:=1}
-: ${USE_MEM:=true}
+: "${TAR_STRIP_COMPONENTS:=1}"
+: "${USE_MEM:=true}"
 
 echo "ARCH=$ARCH"
 echo "P=$P"
