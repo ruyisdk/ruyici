@@ -6,7 +6,7 @@ image_tag_pkgbuilder_unified() {
 
     case "$host_arch" in
         amd64)
-            echo "ghcr.io/ruyisdk/ruyi-ci-pkgbuilder-unified:20240911"
+            echo "ghcr.io/ruyisdk/ruyi-ci-pkgbuilder-unified:20250401"
             ;;
         *)
             echo "error: image_tag_pkgbuilder_unified: unsupported host arch $host_arch" >&2

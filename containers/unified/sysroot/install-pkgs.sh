@@ -6,7 +6,7 @@ ARCH="$1"
 # $BUILDARCH is populated by the builder
 # $LLVM_MAJOR is defined in the Dockerfile
 
-[[ $BUILDARCH == $ARCH ]] && IS_NATIVE=true || IS_NATIVE=false
+[[ $BUILDARCH == "$ARCH" ]] && IS_NATIVE=true || IS_NATIVE=false
 
 echo "ARCH: $ARCH"
 echo "BUILDARCH: $BUILDARCH"
@@ -36,11 +36,9 @@ if "$IS_NATIVE"; then
 
         # for targetting aarch64 host
         crossbuild-essential-arm64
-        pkg-config-aarch64-linux-gnu
 
         # for targetting riscv64 host
         crossbuild-essential-riscv64
-        pkg-config-riscv64-linux-gnu
 
         # for ruyi-build driver
         schedtool
@@ -73,7 +71,7 @@ pkgs+=(
     libjack-dev
     libpulse-dev
     libasound2-dev
-    # libpipewire-0.3-dev  # not present in ubuntu:20.04
+    libpipewire-0.3-dev
     libbpf-dev
     libcap-ng-dev
     libcurl4-gnutls-dev
@@ -95,8 +93,8 @@ pkgs+=(
     libsdl2-dev
     libseccomp-dev
     libslirp-dev
-    # libspice-server-dev  # not present in at least riscv64
-    # liburing-dev  # not present in ubuntu:20.04
+    libspice-server-dev
+    liburing-dev
     libusb-1.0-0-dev
     libusbredirparser-dev
     libssh-dev
@@ -113,20 +111,45 @@ pkgs+=(
     # zlib1g-dev  # already unconditionally included for qemu
     libsnappy-dev
     liblz4-dev
+    libunwind-dev
 )
-
-if [[ $ARCH != riscv64 ]]; then
-    # not present in ubuntu:20.04
-    pkgs+=( libunwind-dev )
-fi
 
 apt-get install -y "${pkgs[@]}"
 
 if "$IS_NATIVE"; then
     # symlink LLVM tools
-    pushd /usr/bin
-        ln -s clang-"$LLVM_MAJOR" clang
-        ln -s clang++-"$LLVM_MAJOR" clang++
-        ln -s ld.lld-"$LLVM_MAJOR" ld.lld
+    pushd /usr/local/bin
+        ln -s /usr/bin/clang-"$LLVM_MAJOR" clang
+        ln -s /usr/bin/clang++-"$LLVM_MAJOR" clang++
+        ln -s /usr/bin/ld.lld-"$LLVM_MAJOR" ld.lld
     popd
 fi
+
+make_pkg_config_wrapper() {
+    local host="$1"
+
+    # similar to the wrapper script in Ubuntu 20.04
+    cat > /usr/bin/"${host}-pkg-config" <<EOF
+#!/bin/bash
+[[ -n \$PKG_CONFIG_LIBDIR ]] && exec pkg-config "\$@"
+
+PKG_CONFIG_LIBDIR="/usr/local/${host}/lib/pkgconfig"
+# For a native build we would also want to append /usr/local/lib/pkgconfig
+# at this point; but this is a cross-building script, so don't
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/local/share/pkgconfig"
+PKG_CONFIG_LIBDIR="/usr/local/lib/${host}/pkgconfig:\$PKG_CONFIG_LIBDIR"
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/lib/${host}/pkgconfig"
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/${host}/lib/pkgconfig"
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/share/pkgconfig"
+export PKG_CONFIG_LIBDIR
+exec pkg-config "\$@"
+EOF
+
+    chmod a+x /usr/bin/"${host}-pkg-config"
+}
+
+# make pkg-config wrappers
+# pkg-config-${CHOST} has been removed since Ubuntu 22.04
+for chost in aarch64-linux-gnu riscv64-linux-gnu; do
+    make_pkg_config_wrapper "$chost"
+done
