@@ -65,6 +65,7 @@ inject_ruyisdk_credentials() {
 	local group_record="ruyisdk:x:${gid}:"
 	local gshadow_record='ruyisdk:!::'
 	local passwd_record="ruyisdk:x:${uid}:${gid}:RuyiSDK well-known credential:/${home_dir_rel}:/bin/sh"
+	# shellcheck disable=SC2016
 	local shadow_record='ruyisdk:$y$j9T$TWVa6ERvzmT9LnGHf6Acz.$t77z2.nrvWVbubNVo/if12l1qwy7rQ1mWCkaylS3cA1:19979:0:99999:7:::'
 
 	echo "[.]   injecting RuyiSDK well-known credential"
@@ -122,7 +123,7 @@ main() {
 			continue
 		fi
 
-		if [[ $lo_dev == $_LO_MOUNT ]] && "$lo_has_partitions"; then
+		if [[ $lo_dev == "$_LO_MOUNT" ]] && "$lo_has_partitions"; then
 			# the loop device has partitions and we have already checked all
 			# of them
 			break

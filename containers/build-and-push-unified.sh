@@ -5,6 +5,7 @@ set -e
 MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "$MY_DIR"
+# shellcheck source-path=SCRIPTDIR
 source ./_image_tag_base.sh
 
 cd "unified"
