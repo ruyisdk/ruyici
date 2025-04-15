@@ -1,0 +1,116 @@
+From db30046a454b7fcb8bff56e0675b24f293d28420 Mon Sep 17 00:00:00 2001
+From: WANG Xuerui <git@xen0n.name>
+Date: Thu, 3 Apr 2025 11:43:29 +0800
+Subject: [PATCH] RISC-V: [gprofng] Allow building gprofng without
+ asm/hwprobe.h
+
+The code is actually able to gracefully fallback if the syscall number
+of riscv_hwprobe is not available at build time, but it still depended
+on the <asm/hwprobe.h> header unconditionally. In certain environments
+such as one of crosstool-NG's Canadian Cross build step (binutils for
+host), or one with very outdated kernel headers, the header will not be
+present, causing the build to fail.
+
+While the relevant projects/environments should be fixed nevertheless,
+a configure-time check for <asm/hwprobe.h> is helpful for fixing gprofng
+builds with released versions of ct-ng etc.
+
+Signed-off-by: WANG Xuerui <git@xen0n.name>
+---
+ gprofng/common/config.h.in |  3 +++
+ gprofng/common/cpuid.c     |  6 ++++--
+ gprofng/configure          | 15 +++++++++++++++
+ gprofng/configure.ac       |  4 ++++
+ 4 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/gprofng/common/config.h.in b/gprofng/common/config.h.in
+index f8484f238fd..726de23dd3a 100644
+--- a/gprofng/common/config.h.in
++++ b/gprofng/common/config.h.in
+@@ -6,6 +6,9 @@
+ /* Enable java profiling */
+ #undef GPROFNG_JAVA_PROFILING
+ 
++/* Define to 1 if you have the <asm/hwprobe.h> header file. */
++#undef HAVE_ASM_HWPROBE_H
++
+ /* Define to 1 if you have the `clock_gettime' function. */
+ #undef HAVE_CLOCK_GETTIME
+ 
+diff --git a/gprofng/common/cpuid.c b/gprofng/common/cpuid.c
+index 9e45233a412..7c613f5c4e4 100644
+--- a/gprofng/common/cpuid.c
++++ b/gprofng/common/cpuid.c
+@@ -48,8 +48,10 @@ __get_cpuid (unsigned int op ATTRIBUTE_UNUSED, unsigned int *eax,
+ #include <sched.h>
+ #include <sys/syscall.h>
+ #include <unistd.h>
++#ifdef HAVE_ASM_HWPROBE_H
+ #include <asm/hwprobe.h>
+ #endif
++#endif
+ 
+ /*
+  * Various routines to handle identification
+@@ -188,7 +190,7 @@ get_cpuid_info ()
+       break;
+     }
+ #elif defined(__riscv)
+-  #ifndef __riscv_hwprobe
++  #if !defined(__riscv_hwprobe) || !defined(HAVE_ASM_HWPROBE_H)
+ 	  cpi->cpi_vendor = 0;
+ 	  cpi->cpi_family = 0;
+ 	  cpi->cpi_model = 0;
+@@ -208,7 +210,7 @@ get_cpuid_info ()
+ 	cpi->cpi_vendor = res.value;
+ 	cpi->cpi_family = 0;
+ 	cpi->cpi_model = 0;
+-	#endif
++  #endif
+ #endif
+   return cpi;
+ }
+diff --git a/gprofng/configure b/gprofng/configure
+index 3f408634ca5..d3016dd7c0a 100755
+--- a/gprofng/configure
++++ b/gprofng/configure
+@@ -16941,6 +16941,21 @@ fi
+ done
+ 
+ 
++# For riscv builds inside incomplete environments such as during intermediate
++# steps of cross toolchain building, or with outdated Linux headers.
++for ac_header in asm/hwprobe.h
++do :
++  ac_fn_c_check_header_mongrel "$LINENO" "asm/hwprobe.h" "ac_cv_header_asm_hwprobe_h" "$ac_includes_default"
++if test "x$ac_cv_header_asm_hwprobe_h" = xyes; then :
++  cat >>confdefs.h <<_ACEOF
++#define HAVE_ASM_HWPROBE_H 1
++_ACEOF
++
++fi
++
++done
++
++
+ clock_gettime_link=
+ # At least for glibc, clock_gettime is in librt.  But don't
+ # pull that in if it still doesn't give us the function we want.  This
+diff --git a/gprofng/configure.ac b/gprofng/configure.ac
+index d7a2c386d10..ed4565fa04c 100644
+--- a/gprofng/configure.ac
++++ b/gprofng/configure.ac
+@@ -244,6 +244,10 @@ AC_SUBST(GPROFNG_CPPFLAGS, [${gprofng_cppflags}])
+ AC_CHECK_DECLS([basename])
+ AC_CHECK_FUNCS(clock_gettime strsignal)
+ 
++# For riscv builds inside incomplete environments such as during intermediate
++# steps of cross toolchain building, or with outdated Linux headers.
++AC_CHECK_HEADERS(asm/hwprobe.h)
++
+ clock_gettime_link=
+ # At least for glibc, clock_gettime is in librt.  But don't
+ # pull that in if it still doesn't give us the function we want.  This
+-- 
+2.48.1
+
