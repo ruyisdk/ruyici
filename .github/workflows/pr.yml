@@ -2,6 +2,8 @@ name: PR checks
 
 on:
   pull_request:
+    branches:
+      - main
 
 jobs:
   shellcheck:
@@ -10,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Lint with shellcheck
-        run: ./scripts/lint-shell-scripts.sh
+        run: ./ci/lint-shell-scripts.sh
 
   dco:
     name: DCO compliance
