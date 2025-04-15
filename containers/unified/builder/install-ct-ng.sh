@@ -60,7 +60,9 @@ build_and_install() {
 
 clean() {
 	rm -rf "$CT_NG_CHECKOUT"
-	[[ -n "$CT_NG_FILENAME" ]] && rm "/tmp/$CT_NG_FILENAME" || true
+	set +e
+	[[ -n "$CT_NG_FILENAME" ]] && rm "/tmp/$CT_NG_FILENAME"
+	set -e
 }
 
 main() {

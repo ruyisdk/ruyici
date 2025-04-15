@@ -6,7 +6,7 @@ ARCH="$1"
 # $BUILDARCH is populated by the builder
 # $LLVM_MAJOR is defined in the Dockerfile
 
-[[ $BUILDARCH == $ARCH ]] && IS_NATIVE=true || IS_NATIVE=false
+[[ $BUILDARCH == "$ARCH" ]] && IS_NATIVE=true || IS_NATIVE=false
 
 echo "ARCH: $ARCH"
 echo "BUILDARCH: $BUILDARCH"
@@ -31,6 +31,7 @@ esac
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
+# shellcheck disable=SC1091
 source /etc/lsb-release
 # $DISTRIB_CODENAME is the codename to use
 
