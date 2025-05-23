@@ -1,16 +1,27 @@
 #!/bin/bash
 # this file is meant to be sourced
 
-image_tag_pkgbuilder_unified() {
-    local host_arch="$1"
+image_tag_pkgbuilder() {
+    local kind="$1"
+    local host_arch="$2"
+    local tag
 
-    case "$host_arch" in
+    case "$kind" in
+    unified)
+        tag="ghcr.io/ruyisdk/ruyi-ci-pkgbuilder-unified"
+        case "$host_arch" in
         amd64)
-            echo "ghcr.io/ruyisdk/ruyi-ci-pkgbuilder-unified:20250401"
+            echo "$tag:20250401"
             ;;
         *)
-            echo "error: image_tag_pkgbuilder_unified: unsupported host arch $host_arch" >&2
+            echo "error: image_tag_pkgbuilder: unsupported host arch $host_arch" >&2
             return 1
             ;;
+        esac
+        ;;
+
+    *)
+        echo "error: image_tag_pkgbuilder: unsupported image kind $kind" >&2
+        ;;
     esac
 }
