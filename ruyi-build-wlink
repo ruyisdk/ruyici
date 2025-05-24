@@ -1,0 +1,59 @@
+#!/bin/bash
+
+MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+: "${CONTAINERIZED_BUILD:=false}"
+: "${RUYI_DATESTAMP:=20250524}"
+
+die() {
+	echo "$@" >&2
+	exit 1
+}
+
+ensure_dir() {
+	local path="$1"
+	[[ -d "$path" ]] || mkdir "$path"
+}
+
+main() {
+	local version_desc
+	local git_commit
+
+	source "$MY_DIR"/containers/_image_tag_base.sh
+
+	if [[ -z $RUYI_BUILDER_TAG ]]; then
+		RUYI_BUILDER_TAG="$(image_tag_pkgbuilder rust-musl amd64)"
+	fi
+
+	ensure_dir "$MY_DIR/out"
+	ensure_dir "$MY_DIR/work"
+
+	# no git inside the builder
+	pushd "$MY_DIR/work"
+	rm -rf wlink
+	git clone https://github.com/ch32-rs/wlink.git
+	pushd wlink
+	# e.g. "v0.1.1-3-g217f0e51"
+	version_desc="$(git describe --tags --abbrev=8 --match='v*')"
+	git_commit="${version_desc#*-g}"  # "217f0e51"
+	version_desc="${version_desc%%-*}"  # "v0.1.1"
+	version_desc="${version_desc#v}"  # "0.1.1"
+	version_desc="${version_desc}-ruyi.${RUYI_DATESTAMP}+git.${git_commit}"
+	popd
+	popd
+
+	local docker_args=(
+		--rm
+		-ti
+		-v "$MY_DIR/out":/out
+		-v "$MY_DIR/work":/work
+		-v "$MY_DIR/ruyi-build-wlink-inner":/usr/local/bin/ruyi-build-wlink-inner:ro
+		-e CONTAINERIZED_BUILD=true
+		"${RUYI_BUILDER_TAG}"
+		ruyi-build-wlink-inner /work /out "wlink-${version_desc}"
+		"$@"
+	)
+	docker run "${docker_args[@]}" || die "inner build pass failed"
+}
+
+main "$@"

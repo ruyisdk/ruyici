@@ -24,7 +24,7 @@ image_tag_pkgbuilder() {
         tag="ghcr.io/ruyisdk/ruyi-ci-pkgbuilder-rust-musl"
         case "$host_arch" in
         amd64)
-            echo "$tag:20250523"
+            echo "$tag:20250524"
             ;;
         *)
             echo "error: image_tag_pkgbuilder: unsupported host arch $host_arch" >&2

@@ -3,6 +3,8 @@
 FROM --platform=linux/amd64 rust:1.87-alpine3.21
 
 RUN <<DOCKEREOF
+apk add --no-cache bash curl git musl-dev
+
 rustup target add aarch64-unknown-linux-musl
 rustup target add riscv64gc-unknown-linux-musl
 # rustup target add x86_64-unknown-linux-musl  # this is preinstalled

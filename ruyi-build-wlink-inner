@@ -1,0 +1,60 @@
+#!/bin/sh
+
+die() {
+	echo "$@" >&2
+	exit 1
+}
+
+rust_target_for_arch() {
+	case "$1" in
+	aarch64) echo aarch64-unknown-linux-musl ;;
+	riscv64) echo riscv64gc-unknown-linux-musl ;;
+	x86_64) echo x86_64-unknown-linux-musl ;;
+	esac
+}
+
+inner_main() {
+	workdir="$1"
+	outdir="$2"
+	version_desc="$3"  # e.g. "wlink-0.1.1-ruyi.20250524+git.217f0e51"
+
+	ruyi_datestamp="${version_desc#*-ruyi.}"
+	ruyi_datestamp="${ruyi_datestamp%+*}"
+	SOURCE_EPOCH="$(echo "$ruyi_datestamp" | sed -E "s/(....)(..)(..)/\1-\2-\3/")T00:00:00+08:00"
+	export SOURCE_EPOCH
+
+	echo "work $workdir"
+	echo "out  $outdir"
+	echo "ver  $version_desc"
+	echo "source epoch $SOURCE_EPOCH"
+	env
+
+	# workaround builder image defects
+	[[ -e "$CARGO_HOME"/config.toml ]] || mv ~/.cargo/config.toml "$CARGO_HOME"/config.toml
+	[[ -e /usr/include/linux/magic.h ]] || apk add --no-cache linux-headers
+
+	out_tmpdir_root="$outdir/out.$version_desc"
+	mkdir -p "$out_tmpdir_root"
+
+	for arch in aarch64 riscv64 x86_64; do
+		out_tmpdir="$out_tmpdir_root/$arch/$version_desc/bin"
+		rust_target="$(rust_target_for_arch "$arch")"
+
+		mkdir -p "$out_tmpdir"
+		cd "$workdir"/wlink || return $?
+		cargo build --release --target="$rust_target"
+		mv target/"$rust_target"/release/wlink "$out_tmpdir"/wlink
+
+		cd "$out_tmpdir_root/$arch" || return $?
+		tar czvf "$outdir/$version_desc.$arch.tar.gz" .
+	done
+
+	rm -rf "$out_tmpdir_root"
+}
+
+if "$CONTAINERIZED_BUILD"; then
+	inner_main "$@"
+else
+	echo "$0: only meant to be used inside builder containers" >&2
+	exit 1
+fi
