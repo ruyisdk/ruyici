@@ -10,7 +10,7 @@ ARCH="${ARCH:-amd64}"
 source "$MY_DIR"/containers/_image_tag_base.sh
 
 if [[ -z $RUYI_BUILDER_TAG ]]; then
-	RUYI_BUILDER_TAG="$(image_tag_pkgbuilder_unified amd64)"
+	RUYI_BUILDER_TAG="$(image_tag_pkgbuilder unified amd64)"
 fi
 
 die() {
