@@ -32,22 +32,53 @@ SRC_DIR="${TMP}/llvm-src"
 INSTALL_ROOT=${TMP}/prefix/"$P"
 
 HOST_STATIC_LIB_ROOT="/usr/lib/x86_64-linux-gnu"
+CC=clang
+CXX=clang++
+CMAKE_EXTRA_ARGS=()
 case "$ARCH" in
-    amd64) HOST_EXTRA_LIB_ROOT="$HOST_STATIC_LIB_ROOT" ;;
-    arm64) HOST_EXTRA_LIB_ROOT="/sysroot/arm64/lib/aarch64-linux-gnu" ;;
-    riscv64) HOST_EXTRA_LIB_ROOT="/sysroot/riscv64/lib/riscv64-linux-gnu" ;;
+    amd64)
+        HOST_EXTRA_LIB_ROOT="$HOST_STATIC_LIB_ROOT"
+        CMAKE_EXTRA_ARGS+=(
+            -DLLVM_USE_LINKER=lld
+            -DLLVM_ENABLE_LTO=Thin
+
+            # TODO: cross-compilation of llvm libc is not without problems
+            # see https://github.com/llvm/llvm-project/issues/59504
+            -DLLVM_ENABLE_RUNTIMES=libc
+            # https://github.com/llvm/llvm-project/issues/147153
+            -DLIBC_WNO_ERROR=ON
+        )
+        ;;
+    arm64)
+        export QEMU_LD_PREFIX=/sysroot/arm64
+        HOST_EXTRA_LIB_ROOT="/sysroot/arm64/lib/aarch64-linux-gnu"
+        CC=aarch64-linux-gnu-gcc
+        CXX=aarch64-linux-gnu-g++
+        ;;
+    riscv64)
+        export QEMU_LD_PREFIX=/sysroot/riscv64
+        HOST_EXTRA_LIB_ROOT="/sysroot/riscv64/lib/riscv64-linux-gnu"
+        CC=riscv64-linux-gnu-gcc
+        CXX=riscv64-linux-gnu-g++
+
+        common_ldflags="-Wl,--as-needed -Wl,--start-group -Wl,-L,${HOST_EXTRA_LIB_ROOT} -Wl,-latomic -Wl,--end-group"
+        CMAKE_EXTRA_ARGS+=(
+            -DCMAKE_EXE_LINKER_FLAGS="$common_ldflags"
+            -DCMAKE_EXE_LINKER_FLAGS="$common_ldflags"
+            -DCMAKE_EXE_LINKER_FLAGS="$common_ldflags"
+        )
+        unset common_ldflags
+        ;;
 esac
 
 CMAKE_ARGS=(
     -G Ninja
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT"
-    -DCMAKE_C_COMPILER=clang
-    -DCMAKE_CXX_COMPILER=clang++
-    -DCMAKE_C_FLAGS="-O2 -pipe -fPIC"
-    -DCMAKE_CXX_FLAGS="-O2 -pipe -fPIC"
-    -DLLVM_USE_LINKER=lld
-    -DLLVM_ENABLE_LTO=Thin
+    -DCMAKE_C_COMPILER="$CC"
+    -DCMAKE_CXX_COMPILER="$CXX"
+    -DCMAKE_C_FLAGS="-O2 -pipe -fPIC -Wno-error"
+    -DCMAKE_CXX_FLAGS="-O2 -pipe -fPIC -Wno-error"
     -DLLVM_PARALLEL_COMPILE_JOBS="$(nproc)"
     -DLLVM_PARALLEL_LINK_JOBS=4
     -DLLVM_SOURCE_PREFIX="$SRC_DIR"
@@ -58,7 +89,7 @@ CMAKE_ARGS=(
     -DLLVM_LINK_LLVM_DYLIB=ON
     -DLLVM_INSTALL_UTILS=ON
 
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libc;lld"
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld"
     # broken for now, seems a sysroot for each target is needed
     #-DLLVM_ENABLE_RUNTIMES=all
     #-DLLVM_RUNTIME_TARGETS="riscv32-unknown-linux-gnu;riscv64-unknown-linux-gnu"
@@ -85,7 +116,9 @@ CMAKE_ARGS=(
     #-DZLIB_LIBRARY="${HOST_EXTRA_LIB_ROOT}/libz.a"
     -DLLVM_ENABLE_ZLIB=OFF  # TODO: PIC link failures; check later
     -DLLVM_ENABLE_ZSTD=FORCE_ON
-    -Dzstd_LIBRARY="${HOST_STATIC_LIB_ROOT}/libzstd.a"
+    -Dzstd_LIBRARY="${HOST_EXTRA_LIB_ROOT}/libzstd.a"
+
+    "${CMAKE_EXTRA_ARGS[@]}"
 
     # seems unsupported
     # --with-pkgversion="RuyiSDK $RUYI_DATESTAMP"
