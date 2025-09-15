@@ -32,13 +32,18 @@ SRC_DIR="${TMP}/llvm-src"
 INSTALL_ROOT=${TMP}/prefix/"$P"
 
 HOST_STATIC_LIB_ROOT="/usr/lib/x86_64-linux-gnu"
-CC=clang
-CXX=clang++
+CFLAGS="-O2 -pipe -fPIC -Wno-error"
+CXXFLAGS="$CFLAGS"
 CMAKE_EXTRA_ARGS=()
 case "$ARCH" in
     amd64)
         HOST_EXTRA_LIB_ROOT="$HOST_STATIC_LIB_ROOT"
         CMAKE_EXTRA_ARGS+=(
+            -DCMAKE_C_COMPILER="clang"
+            -DCMAKE_CXX_COMPILER="clang++"
+            -DCMAKE_C_FLAGS="$CFLAGS"
+            -DCMAKE_CXX_FLAGS="$CXXFLAGS"
+
             -DLLVM_USE_LINKER=lld
             -DLLVM_ENABLE_LTO=Thin
 
@@ -49,25 +54,67 @@ case "$ARCH" in
             -DLIBC_WNO_ERROR=ON
         )
         ;;
+
     arm64)
         export QEMU_LD_PREFIX=/sysroot/arm64
-        HOST_EXTRA_LIB_ROOT="/sysroot/arm64/lib/aarch64-linux-gnu"
-        CC=aarch64-linux-gnu-gcc
-        CXX=aarch64-linux-gnu-g++
+        triple=aarch64-linux-gnu
+        HOST_EXTRA_LIB_ROOT="/sysroot/${ARCH}/lib/${triple}"
+
+        cat > /tmp/toolchain.cmake <<EOF
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSROOT "${QEMU_LD_PREFIX}")
+set(CMAKE_C_COMPILER_TARGET ${triple})
+set(CMAKE_CXX_COMPILER_TARGET ${triple})
+set(CMAKE_C_FLAGS_INIT "$CFLAGS")
+set(CMAKE_CXX_FLAGS_INIT "$CXXFLAGS")
+set(CMAKE_LINKER_TYPE LLD)
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+EOF
+
+        CMAKE_EXTRA_ARGS+=(
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/toolchain.cmake
+            -DLLVM_HOST_TRIPLE="$triple"
+        )
+        unset triple
         ;;
+
     riscv64)
         export QEMU_LD_PREFIX=/sysroot/riscv64
-        HOST_EXTRA_LIB_ROOT="/sysroot/riscv64/lib/riscv64-linux-gnu"
-        CC=riscv64-linux-gnu-gcc
-        CXX=riscv64-linux-gnu-g++
+        triple=riscv64-linux-gnu
+        HOST_EXTRA_LIB_ROOT="/sysroot/${ARCH}/lib/${triple}"
+
+        cat > /tmp/toolchain.cmake <<EOF
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSROOT "${QEMU_LD_PREFIX}")
+set(CMAKE_C_COMPILER_TARGET ${triple})
+set(CMAKE_CXX_COMPILER_TARGET ${triple})
+set(CMAKE_C_FLAGS_INIT "$CFLAGS")
+set(CMAKE_CXX_FLAGS_INIT "$CXXFLAGS")
+set(CMAKE_LINKER_TYPE LLD)
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+EOF
 
         common_ldflags="-Wl,--as-needed -Wl,--start-group -Wl,-L,${HOST_EXTRA_LIB_ROOT} -Wl,-latomic -Wl,--end-group"
         CMAKE_EXTRA_ARGS+=(
-            -DCMAKE_EXE_LINKER_FLAGS="$common_ldflags"
-            -DCMAKE_EXE_LINKER_FLAGS="$common_ldflags"
-            -DCMAKE_EXE_LINKER_FLAGS="$common_ldflags"
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/toolchain.cmake
+
+            #-DCMAKE_EXE_LINKER_FLAGS="$common_ldflags"
+            #-DCMAKE_MODULE_LINKER_FLAGS="$common_ldflags"
+            #-DCMAKE_SHARED_LINKER_FLAGS="$common_ldflags"
+
+            -DLLVM_HOST_TRIPLE="$triple"
         )
-        unset common_ldflags
+        unset common_ldflags triple
         ;;
 esac
 
@@ -75,10 +122,6 @@ CMAKE_ARGS=(
     -G Ninja
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT"
-    -DCMAKE_C_COMPILER="$CC"
-    -DCMAKE_CXX_COMPILER="$CXX"
-    -DCMAKE_C_FLAGS="-O2 -pipe -fPIC -Wno-error"
-    -DCMAKE_CXX_FLAGS="-O2 -pipe -fPIC -Wno-error"
     -DLLVM_PARALLEL_COMPILE_JOBS="$(nproc)"
     -DLLVM_PARALLEL_LINK_JOBS=4
     -DLLVM_SOURCE_PREFIX="$SRC_DIR"
@@ -117,12 +160,22 @@ CMAKE_ARGS=(
     -DLLVM_ENABLE_ZLIB=OFF  # TODO: PIC link failures; check later
     -DLLVM_ENABLE_ZSTD=FORCE_ON
     -Dzstd_LIBRARY="${HOST_EXTRA_LIB_ROOT}/libzstd.a"
-
-    "${CMAKE_EXTRA_ARGS[@]}"
-
-    # seems unsupported
-    # --with-pkgversion="RuyiSDK $RUYI_DATESTAMP"
 )
+
+if [[ -n $LLVM_VENDOR ]]; then
+    CMAKE_ARGS+=( -DPACKAGE_VENDOR="$LLVM_VENDOR" )
+fi
+if [[ -n $CLANG_REPOSITORY_STRING ]]; then
+    CMAKE_ARGS+=( -DCLANG_REPOSITORY_STRING="$CLANG_REPOSITORY_STRING" )
+fi
+if [[ -n $CLANG_VENDOR ]]; then
+    CMAKE_ARGS+=( -DCLANG_VENDOR="$CLANG_VENDOR" )
+fi
+if [[ -n $BUG_REPORT_URL ]]; then
+    CMAKE_ARGS+=( -DBUG_REPORT_URL="$BUG_REPORT_URL" )
+fi
+
+CMAKE_ARGS+=( "${CMAKE_EXTRA_ARGS[@]}" )
 
 pushd /tmp
     [[ -e src.tar.xz ]] || wget -O src.tar.xz "$SRC_URI"
@@ -142,5 +195,5 @@ pushd "$TMP/build"
 popd
 
 pushd "$INSTALL_ROOT"/..
-    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP"."$ARCH".tar.zst "$INSTALL_ROOT"
+    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP"."$ARCH".tar.zst "./$P"
 popd
