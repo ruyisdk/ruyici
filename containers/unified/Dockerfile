@@ -25,7 +25,7 @@ ARG CT_NG_GIT_BRANCH=master
 ARG CT_NG_GIT_REPO=https://github.com/crosstool-ng/crosstool-ng.git
 # ARG CT_NG_VERSION=1.26.0
 # ARG CT_NG_DOWNLOAD_URL_BASE="http://crosstool-ng.org/download/crosstool-ng"
-ARG LLVM_MAJOR=20
+ARG LLVM_MAJOR=21
 
 COPY --link ./sysroot/prepare-distro.sh /image/prepare-distro.sh
 RUN /image/prepare-distro.sh amd64
@@ -38,6 +38,16 @@ RUN /image/install-ct-ng.sh
 
 COPY --from=sysroot-arm64 --link / /sysroot/arm64
 COPY --from=sysroot-riscv64 --link / /sysroot/riscv64
+
+# Fix dangling symlinks in sysroot dirs referencing to certain libc libraries
+# placed under /lib/$target
+RUN <<DOCKEREOF
+for f in $(find -L /sysroot/arm64/lib/aarch64-linux-gnu/ /sysroot/riscv64/lib/riscv64-linux-gnu/ -type l); do
+    prefix="${f%/lib/*}"
+    target="$(readlink "$f")"
+    ln -s "${prefix}/${target}" "$target"
+done
+DOCKEREOF
 
 RUN groupadd -g "$BUILDER_GID" b && useradd -d /home/b -m -g "$BUILDER_GID" -u "$BUILDER_UID" -s /bin/bash b
 USER $BUILDER_UID:$BUILDER_GID
