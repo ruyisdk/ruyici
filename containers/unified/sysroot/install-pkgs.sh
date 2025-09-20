@@ -28,6 +28,9 @@ pkgs=(
 
 # and additionally for the native arch
 if "$IS_NATIVE"; then
+    # workaround cache inconsistency for daily-updated LLVM PPA
+    apt-get update
+
     pkgs+=(
         # for ct-ng
         gcc g++ gperf bison flex texinfo help2man make
@@ -127,20 +130,21 @@ fi
 
 make_pkg_config_wrapper() {
     local host="$1"
+    local sysroot="$2"
 
     # similar to the wrapper script in Ubuntu 20.04
     cat > /usr/bin/"${host}-pkg-config" <<EOF
 #!/bin/bash
 [[ -n \$PKG_CONFIG_LIBDIR ]] && exec pkg-config "\$@"
 
-PKG_CONFIG_LIBDIR="/usr/local/${host}/lib/pkgconfig"
+PKG_CONFIG_LIBDIR="${sysroot}/usr/local/${host}/lib/pkgconfig"
 # For a native build we would also want to append /usr/local/lib/pkgconfig
 # at this point; but this is a cross-building script, so don't
-PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/local/share/pkgconfig"
-PKG_CONFIG_LIBDIR="/usr/local/lib/${host}/pkgconfig:\$PKG_CONFIG_LIBDIR"
-PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/lib/${host}/pkgconfig"
-PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/${host}/lib/pkgconfig"
-PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:/usr/share/pkgconfig"
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:${sysroot}/usr/local/share/pkgconfig"
+PKG_CONFIG_LIBDIR="${sysroot}/usr/local/lib/${host}/pkgconfig:\$PKG_CONFIG_LIBDIR"
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:${sysroot}/usr/lib/${host}/pkgconfig"
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:${sysroot}/usr/${host}/lib/pkgconfig"
+PKG_CONFIG_LIBDIR="\$PKG_CONFIG_LIBDIR:${sysroot}/usr/share/pkgconfig"
 export PKG_CONFIG_LIBDIR
 exec pkg-config "\$@"
 EOF
@@ -150,6 +154,7 @@ EOF
 
 # make pkg-config wrappers
 # pkg-config-${CHOST} has been removed since Ubuntu 22.04
-for chost in aarch64-linux-gnu riscv64-linux-gnu; do
-    make_pkg_config_wrapper "$chost"
-done
+if "$IS_NATIVE"; then
+    make_pkg_config_wrapper aarch64-linux-gnu /sysroot/arm64
+    make_pkg_config_wrapper riscv64-linux-gnu /sysroot/riscv64
+fi
