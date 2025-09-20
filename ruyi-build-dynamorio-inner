@@ -10,11 +10,11 @@ RUYI_DATESTAMP=20240914
 
 case "$ARCH" in
 amd64|arm64|riscv64)
-	;;
+    ;;
 *)
-	echo "invalid ARCH: choices are amd64 (default), arm64 or riscv64" >&2
-	exit 1
-	;;
+    echo "invalid ARCH: choices are amd64 (default), arm64 or riscv64" >&2
+    exit 1
+    ;;
 esac
 
 OUT_P="dynamorio-riscv-$PV-ruyi.$RUYI_DATESTAMP"

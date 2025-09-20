@@ -6,35 +6,35 @@ MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$MY_DIR"/containers/_image_tag_base.sh
 
 if [[ -z $RUYI_BUILDER_TAG ]]; then
-	RUYI_BUILDER_TAG="$(image_tag_pkgbuilder unified amd64)"
+    RUYI_BUILDER_TAG="$(image_tag_pkgbuilder unified amd64)"
 fi
 
 die() {
-	echo "$@" >&2
-	exit 1
+    echo "$@" >&2
+    exit 1
 }
 
 ensure_dir() {
-	local path="$1"
-	[[ -d "$path" ]] || mkdir "$path"
+    local path="$1"
+    [[ -d "$path" ]] || mkdir "$path"
 }
 
 main() {
-	ensure_dir "$MY_DIR/out"
-	ensure_dir "$MY_DIR/work"
+    ensure_dir "$MY_DIR/out"
+    ensure_dir "$MY_DIR/work"
 
-	local docker_args=(
-		--user root  # FIXME: remove after next builder image bump
-		--rm
-		-ti
-		-v "$MY_DIR/out":/out
-		-v "$MY_DIR/work":/work
-		-v "$MY_DIR/ruyi-build-dynamorio-inner":/usr/local/bin/ruyi-build-dynamorio-inner:ro
-		"${RUYI_BUILDER_TAG}"
-		ruyi-build-dynamorio-inner
-		"$@"
-	)
-	docker run "${docker_args[@]}" || die "inner build pass failed"
+    local docker_args=(
+        --user root  # FIXME: remove after next builder image bump
+        --rm
+        -ti
+        -v "$MY_DIR/out":/out
+        -v "$MY_DIR/work":/work
+        -v "$MY_DIR/ruyi-build-dynamorio-inner":/usr/local/bin/ruyi-build-dynamorio-inner:ro
+        "${RUYI_BUILDER_TAG}"
+        ruyi-build-dynamorio-inner
+        "$@"
+    )
+    docker run "${docker_args[@]}" || die "inner build pass failed"
 }
 
 main "$@"

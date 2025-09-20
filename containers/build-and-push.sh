@@ -12,8 +12,8 @@ source ./_image_tag_base.sh
 
 tag="$(image_tag_pkgbuilder "$KIND" "$ARCH")"
 if [[ -z $tag ]]; then
-	echo "$0: cannot determine image to build" >&2
-	exit 1
+    echo "$0: cannot determine image to build" >&2
+    exit 1
 fi
 
 cd "$KIND"
