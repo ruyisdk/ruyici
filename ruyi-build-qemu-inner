@@ -2,84 +2,85 @@
 
 set -e
 
-build_flavor="$1"
+# usage: ruyi-build-qemu <config> [arch] [both|user|system]
+CONFIG_FILE="$1"
 ARCH="${2:-amd64}"
 build_variants="${3:-both}"
 
-case "$build_flavor" in
-upstream)
-    P="qemu-8.2.0"
-    PV="8.2.0"
-    RUYI_DATESTAMP=20240128
-    srcfile="${P}.tar.xz"
-    SRC_URI="https://download.qemu.org/$srcfile"
-    pkgversion="RuyiSDK $RUYI_DATESTAMP"
+# e.g.
+#
+# P="qemu-8.2.0"
+# PV="8.2.0"
+# RUYI_DATESTAMP=20240128
+# srcfile="${P}.tar.xz"
+# SRC_URI="https://download.qemu.org/$srcfile"
+# pkgversion="RuyiSDK $RUYI_DATESTAMP"
+# USER_TARGETS="riscv32-linux-user,riscv64-linux-user"
+# SYSTEM_TARGETS="riscv32-softmmu,riscv64-softmmu"
+source "$CONFIG_FILE"
+: "${TAR_STRIP_COMPONENTS:=1}"
+: "${USE_MEM:=true}"
+
+case "$ARCH" in
+amd64)
+    # we're compiling from amd64
+    CROSS_COMPILE_PREFIX=""
     ;;
-xthead)
-    P="qemu-6.1.0"
-    PV="6.1.0"
-    RUYI_DATESTAMP=20231207
-    thead_commit_hash=03813c9fe8
-    srcfile="qemu-xthead-$PV-g$thead_commit_hash.tar.zst"
-    SRC_URI="https://mirror.iscas.ac.cn/ruyisdk/dist/$srcfile"
-    pkgversion="T-Head commit $thead_commit_hash, RuyiSDK $RUYI_DATESTAMP"
+arm64)
+    CROSS_COMPILE_PREFIX="aarch64-linux-gnu-"
+
+    # workaround broken sysroot logic in unified image 20250915
+    #export PKG_CONFIG_LIBDIR=/sysroot/$ARCH/usr/local/lib/aarch64-linux-gnu/pkgconfig:/sysroot/$ARCH/usr/local/aarch64-linux-gnu/lib/pkgconfig:/sysroot/$ARCH/usr/local/share/pkgconfig:/sysroot/$ARCH/usr/lib/aarch64-linux-gnu/pkgconfig:/sysroot/$ARCH/usr/aarch64-linux-gnu/lib/pkgconfig:/sysroot/$ARCH/usr/share/pkgconfig
+    ;;
+riscv64)
+    CROSS_COMPILE_PREFIX="riscv64-linux-gnu-"
+
+    # workaround broken sysroot logic in unified image 20250915
+    #export PKG_CONFIG_LIBDIR=/sysroot/$ARCH/usr/local/lib/aarch64-linux-gnu/pkgconfig:/sysroot/$ARCH/usr/local/aarch64-linux-gnu/lib/pkgconfig:/sysroot/$ARCH/usr/local/share/pkgconfig:/sysroot/$ARCH/usr/lib/aarch64-linux-gnu/pkgconfig:/sysroot/$ARCH/usr/aarch64-linux-gnu/lib/pkgconfig:/sysroot/$ARCH/usr/share/pkgconfig
     ;;
 *)
-    echo "usage: ruyi-build-qemu <upstream|xthead> [arch] [both|user|system]" >&2
+    echo "invalid ARCH: choices are amd64, arm64 or riscv64" >&2
     exit 1
     ;;
 esac
 
-case "$ARCH" in
-amd64)
-	# we're compiling from amd64
-	CROSS_COMPILE_PREFIX=""
-	;;
-arm64)
-	CROSS_COMPILE_PREFIX="aarch64-linux-gnu-"
-	;;
-riscv64)
-	CROSS_COMPILE_PREFIX="riscv64-linux-gnu-"
-	;;
-*)
-	echo "invalid ARCH: choices are amd64, arm64 or riscv64" >&2
-	exit 1
-	;;
-esac
-
 case "$build_variants" in
 both)
-	BUILD_USER=true
-	BUILD_SYSTEM=true
-	;;
+    BUILD_USER=true
+    BUILD_SYSTEM=true
+    ;;
 user)
-	BUILD_USER=true
-	BUILD_SYSTEM=false
-	;;
+    BUILD_USER=true
+    BUILD_SYSTEM=false
+    ;;
 system)
-	BUILD_USER=false
-	BUILD_SYSTEM=true
-	;;
+    BUILD_USER=false
+    BUILD_SYSTEM=true
+    ;;
 *)
-	echo "invalid build variants: choices are user, system or both (default)" >&2
-	exit 1
-	;;
+    echo "invalid build variants: choices are user, system or both (default)" >&2
+    exit 1
+    ;;
 esac
 
-USER_TARGETS="riscv32-linux-user,riscv64-linux-user"
-SYSTEM_TARGETS="riscv32-softmmu,riscv64-softmmu"
+if "$USE_MEM"; then
+    TMP=/tmp/mem  # mounted by outer script
+else
+    TMP=/tmp
+fi
 
-INSTALL_ROOT=/tmp/prefix
+INSTALL_ROOT="$TMP"/prefix
 INSTALL_ROOT_USER="$INSTALL_ROOT/qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
 INSTALL_ROOT_SYSTEM="$INSTALL_ROOT/qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
 
 COMMON_CONFIG_ARGS=(
     --disable-docs
     --with-pkgversion="$pkgversion"
+    --python=python3.11
 )
 
 if [[ -n $CROSS_COMPILE_PREFIX ]]; then
-	COMMON_CONFIG_ARGS+=( --cross-prefix="$CROSS_COMPILE_PREFIX" )
+    COMMON_CONFIG_ARGS+=( --cross-prefix="$CROSS_COMPILE_PREFIX" )
 fi
 
 # static-pie breaks the xthead qemu, because apparently too much TLS is used
@@ -90,38 +91,42 @@ if [[ $build_flavor == xthead ]]; then
 fi
 
 QEMU_SYSTEM_CONFIG_ARGS=(
-	--disable-gnutls  # only 3.6.13 in ubuntu:20.04 but wants >=3.6.14
-	--disable-nettle  # not ubiquitous
-	# no static libs in ubuntu:20.04, not ubiquitous on various distros in case
-	# of dynamic linking (which is currently the case for qemu-system builds),
-	# other build failures, or just too much hassle to support for now
-	# (will try to re-add if requested)
-	--disable-bpf  # no ubiquitously supported soversion
-	--disable-curl  # many indirect deps of libcurl don't have static libs available
-	--disable-gcrypt
-	--disable-libiscsi
-	--disable-libnfs
-	--disable-libssh  # problems with gssapi libs
-	--disable-libudev
-	--disable-opengl  # epoxy, GL, virglrenderer etc.
-	--disable-rbd
-	--disable-rdma
-	--disable-selinux
-	--disable-vnc-jpeg  # no ubiquitously supported soversion
-	--disable-vnc-sasl
-	--disable-xkbcommon  # no static lib
+    --disable-gnutls  # only 3.6.13 in ubuntu:20.04 but wants >=3.6.14
+    --disable-nettle  # not ubiquitous
+    # no static libs in ubuntu:20.04, not ubiquitous on various distros in case
+    # of dynamic linking (which is currently the case for qemu-system builds),
+    # other build failures, or just too much hassle to support for now
+    # (will try to re-add if requested)
+    --disable-bpf  # no ubiquitously supported soversion
+    --disable-curl  # many indirect deps of libcurl don't have static libs available
+    --disable-gcrypt
+    --disable-libiscsi
+    --disable-libnfs
+    --disable-libssh  # problems with gssapi libs
+    --disable-libudev
+    --disable-opengl  # epoxy, GL, virglrenderer etc.
+    --disable-rbd
+    --disable-rdma
+    --disable-selinux
+    --disable-vnc-jpeg  # no ubiquitously supported soversion
+    --disable-vnc-sasl
+    --disable-xkbcommon  # no static lib
 )
 
-pushd /tmp
-    wget "$SRC_URI"
-    tar xf "$srcfile"
+pushd "$TMP"
+    if [[ -e /tmp/src.tar.xz ]]; then
+        tar xf /tmp/src.tar.xz
+    else
+        wget -O "$srcfile" "$SRC_URI"
+        tar xf "$srcfile"
+    fi
 popd
 
-SRC_DIR="/tmp/${srcfile%.tar.*}"
+SRC_DIR="${TMP}/${srcfile%.tar.*}"
 
 if "$BUILD_USER"; then
-mkdir /tmp/build-user
-pushd /tmp/build-user
+mkdir "$TMP"/build-user
+pushd "$TMP"/build-user
     "$SRC_DIR"/configure "${COMMON_CONFIG_ARGS[@]}" \
         "${STATIC_BUILD_CONFIG_ARGS[@]}" \
         --prefix="$INSTALL_ROOT_USER" \
@@ -134,8 +139,8 @@ popd
 fi
 
 if "$BUILD_SYSTEM"; then
-mkdir /tmp/build-sys
-pushd /tmp/build-sys
+mkdir "$TMP"/build-sys
+pushd "$TMP"/build-sys
     "$SRC_DIR"/configure "${COMMON_CONFIG_ARGS[@]}" \
         "${QEMU_SYSTEM_CONFIG_ARGS[@]}" \
         --prefix="$INSTALL_ROOT_SYSTEM" \
