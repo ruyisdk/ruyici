@@ -37,6 +37,7 @@ main() {
 
     clone_args=(
         --depth 1
+        --recurse-submodules
         "$url"
     )
 
