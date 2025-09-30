@@ -61,7 +61,7 @@ main() {
         destdir="$basename-$commit_hash"
         mv src "$destdir"
 
-        reproducible_tar -cvf "/out/${destdir}.src.tar" "./$destdir"
+        reproducible_tar -cvf "/out/${destdir}.src.tar" "$destdir"
         # The end artifact may not be exactly reproducible, but the tarball
         # is. We can revert to simple gzip if reproducibility of the end
         # artifact is really important.
