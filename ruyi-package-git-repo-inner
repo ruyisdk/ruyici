@@ -28,6 +28,7 @@ reproducible_tar() {
 main() {
     url="$1"
     branch="$2"
+    commit="$3"
 
     if $USE_MEM; then
         TMP=/tmp/mem  # mounted by outer script
@@ -36,7 +37,6 @@ main() {
     fi
 
     clone_args=(
-        --depth 1
         --recurse-submodules
         "$url"
     )
@@ -45,16 +45,23 @@ main() {
         clone_args+=( -b "$branch" )
     fi
 
+    if [[ -z $commit ]]; then
+        clone_args+=( --depth 1 )
+    fi
+
     pushd "$TMP"
         git clone "${clone_args[@]}" src
         pushd src
+            [[ -n $commit ]] && git checkout "$commit"
             commit_hash="$(git rev-parse HEAD)"
             SOURCE_EPOCH="$(get_repo_commit_time)"
             export SOURCE_EPOCH
             rm -rf .git
 
             # set all file timestamps to $SOURCE_EPOCH
-            find . -exec touch -md "$SOURCE_EPOCH" '{}' '+'
+            # we need to call touch with -h because some projects *ship*
+            # broken symlinks in the repo, e.g. edk2
+            find . -exec touch -hmd "$SOURCE_EPOCH" '{}' '+'
         popd
 
         basename="$(basename "$url")"

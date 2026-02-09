@@ -19,9 +19,6 @@ ensure_dir() {
 }
 
 main() {
-	local url="$1"
-	local branch="$2"
-
 	ensure_dir "$MY_DIR/out"
 
 	# assume /tmp is tmpfs for now
@@ -37,7 +34,7 @@ main() {
 
 	docker_args+=(
 		"${RUYI_BUILDER_TAG}"
-		ruyi-package-git-repo-inner "$url" "$branch"
+		ruyi-package-git-repo-inner "$@"
 	)
 
 	docker run "${docker_args[@]}" || die "inner build pass failed"
