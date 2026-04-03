@@ -55,8 +55,8 @@ if "$IS_NATIVE"; then
         # for QEMU
         python3-venv
 
-        # for DynamoRIO
-        python3.11-dev python3.11-venv
+        # Fresher Python (noble has python3.12 by default)
+        python3.13-dev python3.13-venv
 
         # useful debugging tools etc.
         ccache vim strace

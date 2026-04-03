@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
 
 # build cross sysroots
-FROM --platform=linux/arm64 ubuntu:22.04 AS sysroot-arm64
+FROM --platform=linux/arm64 ubuntu:24.04 AS sysroot-arm64
 ARG BUILDARCH
 COPY --link ./sysroot/prepare-distro.sh /image/prepare-distro.sh
 RUN /image/prepare-distro.sh arm64
 COPY --link ./sysroot/install-pkgs.sh /image/install-pkgs.sh
 RUN /image/install-pkgs.sh arm64
 
-FROM --platform=linux/riscv64 ubuntu:22.04 AS sysroot-riscv64
+FROM --platform=linux/riscv64 ubuntu:24.04 AS sysroot-riscv64
 ARG BUILDARCH
 COPY --link ./sysroot/prepare-distro.sh /image/prepare-distro.sh
 RUN /image/prepare-distro.sh riscv64
@@ -16,7 +16,7 @@ COPY --link ./sysroot/install-pkgs.sh /image/install-pkgs.sh
 RUN /image/install-pkgs.sh riscv64
 
 # assemble the final builder image (also the amd64 sysroot)
-FROM --platform=linux/amd64 ubuntu:22.04
+FROM --platform=linux/amd64 ubuntu:24.04
 ARG BUILDARCH
 ARG BUILDER_UID=1000
 ARG BUILDER_GID=1000

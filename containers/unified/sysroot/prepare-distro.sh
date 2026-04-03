@@ -11,20 +11,19 @@ ARCH="$1"
 echo "ARCH: $ARCH"
 echo "BUILDARCH: $BUILDARCH"
 
+_MIRROR_BASE="http://mirrors.huaweicloud.com"
+# _MIRROR_BASE="http://mirrors.tuna.tsinghua.edu.cn"
+
 case "$ARCH" in
-amd64)
-    #MIRROR="http://mirrors.huaweicloud.com/ubuntu/"
-    MIRROR="http://mirrors.tuna.tsinghua.edu.cn/ubuntu/"
+amd64|i386)
+    MIRROR="${_MIRROR_BASE}/ubuntu/"
     ;;
-riscv64)
-    # tuna is missing several .deb's at 20240222 that prevents image building
-    # revert to upstream for now
-    MIRROR="http://ports.ubuntu.com/ubuntu-ports/"
+arm64|armhf|ppc64el|riscv64|s390x)
+    MIRROR="${_MIRROR_BASE}/ubuntu-ports/"
     ;;
 *)
-    # the huaweicloud mirror has dep problems with even build-essential
-    #MIRROR="http://mirrors.huaweicloud.com/ubuntu-ports/"
-    MIRROR="http://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/"
+    echo "error: unknown Ubuntu arch: $ARCH" >&2
+    exit 1
     ;;
 esac
 
