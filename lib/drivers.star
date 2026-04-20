@@ -52,3 +52,68 @@ def ctng_invocation(ctx, defconfig_path, artifact_globs, builder_tag = None):
         cwd = ctx.repo_root,
         produces = [ctx.artifact(glob = g) for g in artifact_globs],
     )
+
+
+def qemu_invocation(
+        ctx,
+        config_path,
+        arch,
+        flavor,
+        src_tarball = None,
+        builder_tag = None):
+    """Plan a ``ruyi-build-qemu-inner`` run.
+
+    Mirrors the mount set of the legacy ``ruyi-build-qemu`` wrapper:
+    ``out`` and ``work`` (rw), inner script + config file (ro),
+    optional source tarball (ro), and ``/tmp/mem`` as a real tmpfs.
+
+    Artifact globs are derived from ``arch`` and ``flavor``:
+
+    * ``both`` or ``system`` -> ``qemu-system-riscv-upstream-*.<arch>.tar.zst``
+    * ``both`` or ``user``   -> ``qemu-user-riscv-upstream-*.<arch>.tar.zst``
+    """
+
+    if flavor not in ("both", "system", "user"):
+        fail("qemu_invocation: flavor must be one of both/system/user (got %r)" % flavor)
+
+    image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
+
+    mounts_ro = [
+        (
+            ctx.repo_path("ruyi-build-qemu-inner"),
+            "/usr/local/bin/ruyi-build-qemu-inner",
+        ),
+        (config_path, "/tmp/config.sh"),
+    ]
+    if src_tarball:
+        mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
+
+    produces = []
+    if flavor in ("both", "system"):
+        produces.append(ctx.artifact(
+            glob = "qemu-system-riscv-upstream-*.%s.tar.zst" % arch,
+        ))
+    if flavor in ("both", "user"):
+        produces.append(ctx.artifact(
+            glob = "qemu-user-riscv-upstream-*.%s.tar.zst" % arch,
+        ))
+
+    return ctx.subprocess(
+        argv = docker_run(
+            image = image,
+            mounts_rw = [
+                (repo_host_path(ctx, "out"), "/out"),
+                (repo_host_path(ctx, "work"), "/work"),
+            ],
+            mounts_ro = mounts_ro,
+            tmpfs = ["/tmp/mem"],
+            argv = [
+                "ruyi-build-qemu-inner",
+                "/tmp/config.sh",
+                arch,
+                flavor,
+            ],
+        ),
+        cwd = ctx.repo_root,
+        produces = produces,
+    )
