@@ -1,6 +1,11 @@
 #!/bin/bash
 
-MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Legacy manual-debug wrapper. The canonical entry point for qemu/upstream
+# builds is the ruyi admin build-package recipe at
+# recipes/qemu/upstream-<datestamp>.star. This script is kept only for
+# ad-hoc experiments against the *-inner script outside the recipe runner.
+
+MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 
 source "$MY_DIR"/containers/_image_tag_base.sh
 
