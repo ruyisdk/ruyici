@@ -2,22 +2,45 @@
 
 set -e
 
-# usage: ruyi-build-qemu <config> [arch] [both|user|system]
+# usage: ruyi-build-qemu-inner <config|""> [arch] [both|user|system]
+#
+# If <config> is a non-empty path to an existing file, it is sourced for
+# backward compatibility with the legacy ruyi-build-qemu wrapper. The
+# recipe-driven path instead passes an empty string and supplies all
+# required variables via environment:
+#
+#     build_flavor P PV RUYI_DATESTAMP srcfile SRC_URI pkgversion
+#     USER_TARGETS SYSTEM_TARGETS
+#
+# The optional variables TAR_STRIP_COMPONENTS and USE_MEM may also be
+# set through either mechanism.
 CONFIG_FILE="$1"
 ARCH="${2:-amd64}"
 build_variants="${3:-both}"
 
-# e.g.
-#
-# P="qemu-8.2.0"
-# PV="8.2.0"
-# RUYI_DATESTAMP=20240128
-# srcfile="${P}.tar.xz"
-# SRC_URI="https://download.qemu.org/$srcfile"
-# pkgversion="RuyiSDK $RUYI_DATESTAMP"
-# USER_TARGETS="riscv32-linux-user,riscv64-linux-user"
-# SYSTEM_TARGETS="riscv32-softmmu,riscv64-softmmu"
-source "$CONFIG_FILE"
+if [[ -n "$CONFIG_FILE" && -f "$CONFIG_FILE" ]]; then
+    # e.g.
+    #
+    # P="qemu-8.2.0"
+    # PV="8.2.0"
+    # RUYI_DATESTAMP=20240128
+    # srcfile="${P}.tar.xz"
+    # SRC_URI="https://download.qemu.org/$srcfile"
+    # pkgversion="RuyiSDK $RUYI_DATESTAMP"
+    # USER_TARGETS="riscv32-linux-user,riscv64-linux-user"
+    # SYSTEM_TARGETS="riscv32-softmmu,riscv64-softmmu"
+    # shellcheck disable=SC1090
+    source "$CONFIG_FILE"
+fi
+
+for v in build_flavor P PV RUYI_DATESTAMP srcfile SRC_URI pkgversion \
+         USER_TARGETS SYSTEM_TARGETS; do
+    if [[ -z "${!v}" ]]; then
+        echo "ruyi-build-qemu-inner: required variable \$$v is unset" >&2
+        exit 1
+    fi
+done
+
 : "${TAR_STRIP_COMPONENTS:=1}"
 : "${USE_MEM:=true}"
 

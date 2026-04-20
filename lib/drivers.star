@@ -56,7 +56,7 @@ def ctng_invocation(ctx, defconfig_path, artifact_globs, builder_tag = None):
 
 def qemu_invocation(
         ctx,
-        config_path,
+        config,
         arch,
         flavor,
         src_tarball = None,
@@ -64,18 +64,43 @@ def qemu_invocation(
     """Plan a ``ruyi-build-qemu-inner`` run.
 
     Mirrors the mount set of the legacy ``ruyi-build-qemu`` wrapper:
-    ``out`` and ``work`` (rw), inner script + config file (ro),
-    optional source tarball (ro), and ``/tmp/mem`` as a real tmpfs.
+    ``out`` and ``work`` (rw), the inner script and the optional source
+    tarball (ro), and ``/tmp/mem`` as a real tmpfs. Configuration that
+    the legacy wrapper read from a sourced shell file is passed as
+    environment variables instead; ``config`` is a dict of those
+    variables and must carry at least:
+
+    ``build_flavor``, ``P``, ``PV``, ``RUYI_DATESTAMP``, ``srcfile``,
+    ``SRC_URI``, ``pkgversion``, ``USER_TARGETS``, ``SYSTEM_TARGETS``.
+
+    Additional optional keys such as ``TAR_STRIP_COMPONENTS`` and
+    ``USE_MEM`` may also be included and are passed through verbatim.
 
     Artifact globs are derived from ``arch`` and ``flavor``:
 
-    * ``both`` or ``system`` -> ``qemu-system-riscv-upstream-*.<arch>.tar.zst``
-    * ``both`` or ``user``   -> ``qemu-user-riscv-upstream-*.<arch>.tar.zst``
+    * ``both`` or ``system`` -> ``qemu-system-riscv-<flavor>-*.<arch>.tar.zst``
+    * ``both`` or ``user``   -> ``qemu-user-riscv-<flavor>-*.<arch>.tar.zst``
     """
 
     if flavor not in ("both", "system", "user"):
         fail("qemu_invocation: flavor must be one of both/system/user (got %r)" % flavor)
 
+    _required = [
+        "build_flavor",
+        "P",
+        "PV",
+        "RUYI_DATESTAMP",
+        "srcfile",
+        "SRC_URI",
+        "pkgversion",
+        "USER_TARGETS",
+        "SYSTEM_TARGETS",
+    ]
+    for k in _required:
+        if k not in config:
+            fail("qemu_invocation: config is missing required key %r" % k)
+
+    build_flavor = config["build_flavor"]
     image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
 
     mounts_ro = [
@@ -83,7 +108,6 @@ def qemu_invocation(
             ctx.repo_path("ruyi-build-qemu-inner"),
             "/usr/local/bin/ruyi-build-qemu-inner",
         ),
-        (config_path, "/tmp/config.sh"),
     ]
     if src_tarball:
         mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
@@ -91,11 +115,11 @@ def qemu_invocation(
     produces = []
     if flavor in ("both", "system"):
         produces.append(ctx.artifact(
-            glob = "qemu-system-riscv-upstream-*.%s.tar.zst" % arch,
+            glob = "qemu-system-riscv-%s-*.%s.tar.zst" % (build_flavor, arch),
         ))
     if flavor in ("both", "user"):
         produces.append(ctx.artifact(
-            glob = "qemu-user-riscv-upstream-*.%s.tar.zst" % arch,
+            glob = "qemu-user-riscv-%s-*.%s.tar.zst" % (build_flavor, arch),
         ))
 
     return ctx.subprocess(
@@ -107,9 +131,10 @@ def qemu_invocation(
             ],
             mounts_ro = mounts_ro,
             tmpfs = ["/tmp/mem"],
+            env = config,
             argv = [
                 "ruyi-build-qemu-inner",
-                "/tmp/config.sh",
+                "",
                 arch,
                 flavor,
             ],
