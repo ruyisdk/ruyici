@@ -1,0 +1,5 @@
+format = "v1"
+
+[project]
+name = "ruyici"
+output_dir = "out"
