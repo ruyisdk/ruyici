@@ -39,6 +39,8 @@ RUN /image/install-ct-ng.sh
 COPY --from=sysroot-arm64 --link / /sysroot/arm64
 COPY --from=sysroot-riscv64 --link / /sysroot/riscv64
 
+SHELL ["/bin/bash", "-c"]
+
 # Fix dangling symlinks in sysroot dirs referencing to certain libc libraries
 # placed under /lib/$target
 RUN <<DOCKEREOF
@@ -49,6 +51,16 @@ for f in $(find -L /sysroot/arm64/lib/aarch64-linux-gnu/ /sysroot/riscv64/lib/ri
 done
 DOCKEREOF
 
-RUN groupadd -g "$BUILDER_GID" b && useradd -d /home/b -m -g "$BUILDER_GID" -u "$BUILDER_UID" -s /bin/bash b
+RUN <<DOCKEREOF
+_getent_result="$(getent passwd "$BUILDER_UID")"
+
+if [[ -n $_getent_result ]]; then
+    ln -s "$(cut -f6 -d: <<<"$_getent_result")" /home/b
+else
+    groupadd -g "$BUILDER_GID" b
+    useradd -d /home/b -m -g "$BUILDER_GID" -u "$BUILDER_UID" -s /bin/bash b
+fi
+DOCKEREOF
+
 USER $BUILDER_UID:$BUILDER_GID
 WORKDIR /home/b
