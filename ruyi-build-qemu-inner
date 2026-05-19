@@ -99,7 +99,7 @@ INSTALL_ROOT_SYSTEM="$INSTALL_ROOT/qemu-system-riscv-$build_flavor-$PV.ruyi-$RUY
 COMMON_CONFIG_ARGS=(
     --disable-docs
     --with-pkgversion="$pkgversion"
-    --python=python3.11
+    # --python=python3.13
 )
 
 if [[ -n $CROSS_COMPILE_PREFIX ]]; then

@@ -43,7 +43,7 @@ def docker_run(
         out.append("%s:%s:ro" % (host, container))
     for path in tmpfs:
         out.append("--tmpfs")
-        out.append(path)
+        out.append("%s:exec" % (path, ))  # otherwise defaults to noexec
     for key in sorted(env.keys()):
         out.append("-e")
         out.append("%s=%s" % (key, env[key]))
