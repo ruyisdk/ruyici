@@ -15,11 +15,9 @@ CT_ARCH_64=y
 CT_ARCH_ARCH="rv64gc"
 CT_ARCH_ABI="lp64d"
 # CT_SHOW_CT_VERSION is not set
-CT_TOOLCHAIN_PKGVERSION="RuyiSDK 20250912 PLCT-Sources-c926bf6b4d86"
+CT_TOOLCHAIN_PKGVERSION="RuyiSDK 20250912 RuyiSDK-Sources-c926bf6b4d86"
 CT_TOOLCHAIN_BUGURL="https://github.com/ruyisdk/ruyisdk/issues"
 CT_TARGET_VENDOR="plct"
-CT_CANADIAN=y
-CT_HOST="aarch64-linux-gnu"
 CT_KERNEL_LINUX=y
 CT_BINUTILS_SRC_DEVEL=y
 CT_BINUTILS_DEVEL_URL="https://github.com/ruyisdk/riscv-binutils.git"
