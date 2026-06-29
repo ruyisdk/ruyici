@@ -37,7 +37,7 @@ We welcome contributions to RuyiSDK! Please see our [contribution guidelines](./
 
 ## License
 
-Copyright &copy; 2023-2025 Institute of Software, Chinese Academy of Sciences (ISCAS).
+Copyright &copy; Institute of Software, Chinese Academy of Sciences (ISCAS).
 All rights reserved.
 
 The code content of this repository is licensed under the [Apache 2.0 license](./LICENSE-Apache.txt).
