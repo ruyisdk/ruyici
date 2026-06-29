@@ -54,10 +54,12 @@ major patterns:
   `user`), needs a mounted config file and an optional source tarball,
   uses the `/tmp/mem` tmpfs.
 
+Since the pilot migrations landed, `gnu-ruyisdk` (previously `gnu-plct`)
+has also been migrated. It follows the same ctng-style pattern as
+`gnu-upstream` and reuses the `ctng_invocation()` helper unmodified.
+
 Other drivers are explicitly deferred:
 
-- `gnu-plct` needs a manual rebrand / source-branch check before each
-  build; not a fit for a declarative recipe yet.
 - `llvm`, `box64`, `dynamorio`, `wlink`, `package-git-repo` wait for a
   follow-up roadmap once the pilots settle.
 
@@ -72,7 +74,8 @@ ruyici/
 │   └── drivers.star                  # ctng_invocation(...), qemu_invocation(...)
 ├── recipes/
 │   ├── ctng/
-│   │   └── gnu-upstream.star         # host ∈ {amd64, arm64, riscv64}
+│   │   ├── gnu-upstream.star         # host ∈ {amd64, arm64, riscv64}
+│   │   └── gnu-ruyisdk.star          # host ∈ {amd64, arm64, riscv64}
 │   └── qemu/
 │       ├── upstream-20240128.star    # arch / flavor via ctx.var
 │       └── upstream-20250908.star
@@ -191,13 +194,16 @@ Depends on: M3.
 ### M5 — Retire the migrated legacy wrappers
 
 - `git mv ruyi-build-qemu legacy/ruyi-build-qemu`. `ruyi-build-ctng`
-  stays because the non-pilot `gnu-plct*` configs still use it.
+  stays because the remaining non-migrated `gnu-plct-xthead`,
+  `gnu-plct-rv64ilp32-elf`, `thead-musl`, and `loongarch64-none`
+  configs still use it.
 - Update [README.md](../README.md) to point packagers at
   `ruyi admin build-package recipes/qemu/*.star` for qemu and
-  `recipes/ctng/gnu-upstream.star` for the upstream toolchain, and
-  note that the remaining `ruyi-build-*` scripts are still the entry
-  point for their respective drivers until they are migrated in a
-  follow-up roadmap.
+  `recipes/ctng/gnu-upstream.star` / `recipes/ctng/gnu-ruyisdk.star`
+  for the upstream and ruyisdk toolchains, and note that the
+  remaining `ruyi-build-*` scripts are still the entry point for
+  their respective drivers until they are migrated in a follow-up
+  roadmap.
 - Add a one-line `legacy/README.md` explaining the directory only
   exists for manual debugging of drivers whose recipe form is
   already canonical.
@@ -224,7 +230,7 @@ Depends on: M2, M3, M4.
 
 ## Deferred (explicitly not on this roadmap)
 
-- Migration of `gnu-plct`, `gnu-plct-xthead`, `gnu-plct-rv64ilp32-elf`,
+- Migration of `gnu-plct-xthead`, `gnu-plct-rv64ilp32-elf`,
   `thead-musl`, `loongarch64-none`, `llvm`, `box64`, `dynamorio`,
   `wlink`, `package-git-repo`.
 - Any change to `ci/` or `.github/workflows/`. CI migration waits until
