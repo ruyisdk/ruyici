@@ -192,10 +192,10 @@ def llvm_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
     image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
 
     mounts_ro = [
-        (
-            ctx.repo_path("ruyi-build-llvm-inner"),
-            "/usr/local/bin/ruyi-build-llvm-inner",
-        ),
+            (
+                ctx.repo_path("recipes/llvm/ruyi-build-llvm-inner"),
+                "/usr/local/bin/ruyi-build-llvm-inner",
+            ),
     ]
     if src_tarball:
         mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
