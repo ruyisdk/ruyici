@@ -2,16 +2,39 @@
 
 set -e
 
-CONFIG_FILE="$1"
-ARCH="$2"
-
-# e.g.:
+# usage: ruyi-build-llvm-inner <config|""> <arch>
 #
-# P="llvm-x.y.z"
-# PV="x.y.z"
-# RUYI_DATESTAMP=yyyymmdd
-# SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
-source "$CONFIG_FILE"
+# If <config> is a non-empty path to an existing file, it is sourced for
+# backward compatibility with the legacy ruyi-build-llvm wrapper. The
+# recipe-driven path instead passes an empty string and supplies all
+# required variables via environment:
+#
+#     P PV RUYI_DATESTAMP SRC_URI
+#
+# The optional variables TAR_STRIP_COMPONENTS, USE_MEM, LLVM_VENDOR,
+# CLANG_VENDOR, CLANG_REPOSITORY_STRING, and BUG_REPORT_URL may also be
+# set through either mechanism.
+CONFIG_FILE="$1"
+ARCH="${2:-amd64}"
+
+if [[ -n "$CONFIG_FILE" && -f "$CONFIG_FILE" ]]; then
+    # e.g.
+    #
+    # P="llvm-x.y.z"
+    # PV="x.y.z"
+    # RUYI_DATESTAMP=yyyymmdd
+    # SRC_URI="https://github.com/llvm/llvm-project/releases/download/llvmorg-${PV}/llvm-project-${PV}.src.tar.xz"
+    # shellcheck disable=SC1090
+    source "$CONFIG_FILE"
+fi
+
+for v in P PV RUYI_DATESTAMP SRC_URI; do
+    if [[ -z "${!v}" ]]; then
+        echo "ruyi-build-llvm-inner: required variable \$$v is unset" >&2
+        exit 1
+    fi
+done
+
 : "${TAR_STRIP_COMPONENTS:=1}"
 : "${USE_MEM:=true}"
 
