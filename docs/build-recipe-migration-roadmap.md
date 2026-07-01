@@ -58,12 +58,25 @@ Since the pilot migrations landed, `gnu-ruyisdk` (previously `gnu-plct`)
 has also been migrated. It follows the same ctng-style pattern as
 `gnu-upstream` and reuses the `ctng_invocation()` helper unmodified.
 
+The ctng recipes have since been refactored into a versioned layout with
+a common backbone. The per-host defconfig files are replaced by a single
+seed defconfig (`.defconfig.in`) per toolchain variant; the inner script
+appends `CT_CANADIAN` and `CT_HOST` lines at runtime for cross builds
+via the `CTNG_HOST_TRIPLET` environment variable.
+
 Other drivers are explicitly deferred:
 
 - `llvm`, `box64`, `dynamorio`, `wlink`, `package-git-repo` wait for a
   follow-up roadmap once the pilots settle.
 
-## Target layout (after pilots land)
+The remaining ctng-driven configs (`gnu-plct-xthead`,
+`gnu-plct-rv64ilp32-elf`, `thead-musl`, `loongarch64-none`) are
+deprecated: upstream sources for Xuantie/T-Head have not been updated in
+years and are not expected to see rebuilds. Their defconfigs remain in
+`toolchain-configs/` for archival reference but no recipe migration is
+planned.
+
+## Current layout
 
 ```
 ruyici/
@@ -71,21 +84,33 @@ ruyici/
 ├── lib/
 │   ├── images.star                   # port of containers/_image_tag_base.sh
 │   ├── docker.star                   # docker_run(image, mounts_rw, mounts_ro, tmpfs, env, extra_docker_args, argv)
-│   └── drivers.star                  # ctng_invocation(...), qemu_invocation(...)
+│   ├── drivers.star                  # ctng_invocation(...), qemu_invocation(...), llvm_invocation(...)
+│   └── paths.star                    # repo_host_path()
 ├── recipes/
 │   ├── ctng/
-│   │   ├── gnu-upstream.star         # host ∈ {amd64, arm64, riscv64}
-│   │   └── gnu-ruyisdk.star          # host ∈ {amd64, arm64, riscv64}
-│   └── qemu/
-│       ├── upstream-20240128.star    # arch / flavor via ctx.var
-│       └── upstream-20250908.star
-└── legacy/                           # only populated at the end of the pilots
-    ├── ruyi-build-qemu
-    └── (gnu-upstream has no dedicated outer wrapper; ruyi-build-ctng stays)
+│   │   ├── ctng-toolchain.star               # common backbone for versioned ctng recipes
+│   │   ├── gnu-upstream-0.20260201.0.star     # thin stub (5 lines)
+│   │   ├── gnu-upstream-0.20260201.0.toml     # artifact globs
+│   │   ├── gnu-upstream-0.20260201.0.defconfig.in  # seed defconfig (no host lines)
+│   │   ├── gnu-ruyisdk-0.20260625.0.star      # thin stub (5 lines)
+│   │   ├── gnu-ruyisdk-0.20260625.0.toml      # artifact globs
+│   │   └── gnu-ruyisdk-0.20260625.0.defconfig.in  # seed defconfig (no host lines)
+│   ├── qemu/
+│   │   └── upstream-*.star                    # arch / flavor via ctx.var
+│   └── llvm/
+│       └── {upstream,plct,ruyisdk}-*.star     # host matrix
+├── toolchain-configs/                        # deprecated ctng defconfigs (no active rebuilds)
+│   ├── gnu-plct-xthead/
+│   ├── gnu-plct-rv64ilp32-elf/
+│   ├── thead-toolchain-musl.host-*.defconfig
+│   └── loongarch64-unknown-none*.defconfig
+└── legacy/
+    └── ruyi-build-qemu
 ```
 
-`ruyi-build-ctng` and the other outer wrappers stay at the repo root
-until their own drivers are migrated in a follow-up roadmap.
+`ruyi-build-ctng` stays at the repo root for the deprecated configs
+that still use it; it will move to `legacy/` when those configs are
+removed.
 
 ## Items
 
@@ -210,6 +235,78 @@ Depends on: M3.
 
 Depends on: M2, M3, M4.
 
+### M6 — Versioned ctng recipe layout and deduplication
+
+Adds:
+
+- `ruyi-build-ctng-inner`: reads optional `CTNG_HOST_TRIPLET` env var.
+  When set, appends `CT_CANADIAN=y` and `CT_HOST="<triplet>"` to the
+  seed defconfig before invoking ct-ng. Backward-compatible when unset.
+- `lib/drivers.star` (`ctng_invocation`): new `host_triplet` parameter
+  forwarded as the `CTNG_HOST_TRIPLET` env var.
+- `recipes/ctng/ctng-toolchain.star`: common backbone. By convention
+  loads ``<name>.toml`` for artifact globs, mounts
+  ``<name>.defconfig.in`` as the seed defconfig, and registers one
+  scheduled build per host via the caller's RUYI object.
+
+Effect: per-variant defconfig surface shrinks from 3 host-specific
+files to 1 seed file. Per-host differences (2 lines) are handled at
+runtime by the inner script.
+
+Depends on: M2.
+
+### M7 — `gnu-upstream` versioned recipe
+
+Adds:
+
+- `recipes/ctng/gnu-upstream-0.20260201.0.star` — thin stub (5 lines).
+- `recipes/ctng/gnu-upstream-0.20260201.0.toml` — artifact globs per host.
+- `recipes/ctng/gnu-upstream-0.20260201.0.defconfig.in` — seed defconfig
+  (amd64 variant with host-specific lines omitted).
+
+Removes:
+
+- `recipes/ctng/gnu-upstream.star` — replaced by versioned recipe.
+- `toolchain-configs/gnu-upstream/` — 3 per-host defconfigs no longer
+  needed.
+
+Acceptance: `ruyi admin build-package recipes/ctng/gnu-upstream-0.20260201.0.star --dry-run`
+prints three docker argvs matching the old recipe's argv, with:
+- One seed defconfig mount (not three per-host files)
+- `-e CTNG_HOST_TRIPLET=aarch64-linux-gnu` on arm64 build
+- `-e CTNG_HOST_TRIPLET=riscv64-linux-gnu` on riscv64 build
+
+Depends on: M6.
+
+### M8 — `gnu-ruyisdk` versioned recipe
+
+Adds:
+
+- `recipes/ctng/gnu-ruyisdk-0.20260625.0.star` — thin stub (5 lines).
+- `recipes/ctng/gnu-ruyisdk-0.20260625.0.toml` — artifact globs per host.
+- `recipes/ctng/gnu-ruyisdk-0.20260625.0.defconfig.in` — seed defconfig.
+
+Removes:
+
+- `recipes/ctng/gnu-ruyisdk.star` — replaced by versioned recipe.
+- `toolchain-configs/gnu-ruyisdk/` — 3 per-host defconfigs no longer
+  needed.
+
+Depends on: M6.
+
+### M9 — Deprecate remaining ctng configs
+
+The remaining ctng-driven configs (`gnu-plct-xthead`,
+`gnu-plct-rv64ilp32-elf`, `thead-toolchain-musl`, `loongarch64-*`)
+are deprecated. Xuantie/T-Head upstream sources have not been updated
+in over 2 years; these are not expected to see rebuilds. The
+`gnu-plct` branding is retired (already renamed to `gnu-ruyisdk` in
+the package index).
+
+No recipe migration is planned for these configs. The defconfigs
+remain in `toolchain-configs/` for archival reference only.
+`ruyi-build-ctng` stays at the repo root for any manual rebuilds.
+
 ## Notes / known deltas from the current scripts
 
 - **`/tmp/mem` becomes a real `--tmpfs`.** The current outer scripts
@@ -231,14 +328,16 @@ Depends on: M2, M3, M4.
 ## Deferred (explicitly not on this roadmap)
 
 - Migration of `gnu-plct-xthead`, `gnu-plct-rv64ilp32-elf`,
-  `thead-musl`, `loongarch64-none`, `llvm`, `box64`, `dynamorio`,
-  `wlink`, `package-git-repo`.
+  `thead-musl`, `loongarch64-none` — deprecated, no active rebuild
+  expected; defconfigs remain for archival reference.
+- Migration of `llvm`, `box64`, `dynamorio`, `wlink`,
+  `package-git-repo` — wait for follow-up roadmap.
 - Any change to `ci/` or `.github/workflows/`. CI migration waits until
   after publishing is automated upstream.
-- Any change to `*-inner` scripts, `containers/`, or config files.
+- Any change to `containers/`.
 - Builder-image digest pinning.
 - Moving `ruyi-build-ctng` into `legacy/` (happens when the remaining
-  ctng-driven recipes are migrated).
+  deprecated ctng configs are removed).
 
 ## Commit-mapping summary
 
@@ -250,3 +349,7 @@ Depends on: M2, M3, M4.
 | M3 | M | `lib/drivers.star`, `recipes/qemu/` | M1 |
 | M4 | S | `recipes/qemu/` | M3 |
 | M5 | S | `legacy/`, `README.md` | M2, M3, M4 |
+| M6 | M | `ruyi-build-ctng-inner`, `lib/drivers.star`, `recipes/ctng/ctng-toolchain.star` | M2 |
+| M7 | M | `recipes/ctng/gnu-upstream-0.20260201.0.*` (+ removal of old) | M6 |
+| M8 | M | `recipes/ctng/gnu-ruyisdk-0.20260625.0.*` (+ removal of old) | M6 |
+| M9 | S | `docs/` (deprecation note) | M7, M8 |
