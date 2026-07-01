@@ -88,6 +88,7 @@ ruyici/
 │   └── paths.star                    # repo_host_path()
 ├── recipes/
 │   ├── ctng/
+│   │   ├── ruyi-build-ctng-inner              # inner build script (moved from repo root)
 │   │   ├── ctng-toolchain.star               # common backbone for versioned ctng recipes
 │   │   ├── gnu-upstream-0.20260201.0.star     # thin stub (5 lines)
 │   │   ├── gnu-upstream-0.20260201.0.toml     # artifact globs
@@ -96,8 +97,10 @@ ruyici/
 │   │   ├── gnu-ruyisdk-0.20260625.0.toml      # artifact globs
 │   │   └── gnu-ruyisdk-0.20260625.0.defconfig.in  # seed defconfig (no host lines)
 │   ├── qemu/
+│   │   ├── ruyi-build-qemu-inner              # inner build script (moved from repo root)
 │   │   └── upstream-*.star                    # arch / flavor via ctx.var
 │   └── llvm/
+│       ├── ruyi-build-llvm-inner              # inner build script (moved from repo root)
 │       └── {upstream,plct,ruyisdk}-*.star     # host matrix
 ├── toolchain-configs/                        # deprecated ctng defconfigs (no active rebuilds)
 │   ├── gnu-plct-xthead/
@@ -105,12 +108,16 @@ ruyici/
 │   ├── thead-toolchain-musl.host-*.defconfig
 │   └── loongarch64-unknown-none*.defconfig
 └── legacy/
-    └── ruyi-build-qemu
+    └── ruyi-build-ctng          # deprecated: for archival ctng configs only
 ```
 
-`ruyi-build-ctng` stays at the repo root for the deprecated configs
-that still use it; it will move to `legacy/` when those configs are
-removed.
+The remaining active `ruyi-build-*-inner` scripts (`box64`, `dynamorio`,
+`wlink`, `git-repo`) stay at the repo root until their own drivers are
+migrated to recipes; at that point they will move into their respective
+`recipes/<driver>/` directories alongside their recipes.
+
+The migrated inner scripts (`ctng`, `qemu`, `llvm`) now live inside
+their recipe directories — each `recipes/<driver>/` is self-contained.
 
 ## Items
 
