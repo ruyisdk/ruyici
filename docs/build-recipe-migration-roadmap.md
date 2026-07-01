@@ -66,8 +66,8 @@ via the `CTNG_HOST_TRIPLET` environment variable.
 
 Other drivers are explicitly deferred:
 
-- `llvm`, `box64`, `dynamorio`, `wlink`, `package-git-repo` wait for a
-  follow-up roadmap once the pilots settle.
+- `box64`, `wlink`, `package-git-repo` wait for a follow-up roadmap
+  once the pilots settle.
 
 The remaining ctng-driven configs (`gnu-plct-xthead`,
 `gnu-plct-rv64ilp32-elf`, `thead-musl`, `loongarch64-none`) are
@@ -84,7 +84,7 @@ ruyici/
 ├── lib/
 │   ├── images.star                   # port of containers/_image_tag_base.sh
 │   ├── docker.star                   # docker_run(image, mounts_rw, mounts_ro, tmpfs, env, extra_docker_args, argv)
-│   ├── drivers.star                  # ctng_invocation(...), qemu_invocation(...), llvm_invocation(...)
+│   ├── drivers.star                  # ctng_invocation(...), qemu_invocation(...), llvm_invocation(...), dynamorio_invocation(...)
 │   └── paths.star                    # repo_host_path()
 ├── recipes/
 │   ├── ctng/
@@ -99,19 +99,24 @@ ruyici/
 │   ├── qemu/
 │   │   ├── ruyi-build-qemu-inner              # inner build script (moved from repo root)
 │   │   └── upstream-*.star                    # arch / flavor via ctx.var
-│   └── llvm/
-│       ├── ruyi-build-llvm-inner              # inner build script (moved from repo root)
-│       └── {upstream,plct,ruyisdk}-*.star     # host matrix
+│   ├── llvm/
+│   │   ├── ruyi-build-llvm-inner              # inner build script (moved from repo root)
+│   │   └── {upstream,plct,ruyisdk}-*.star     # host matrix
+│   └── dynamorio/
+│       ├── ruyi-build-dynamorio-inner          # inner build script (moved from repo root)
+│       ├── dynamorio.star                     # common backbone
+│       └── upstream-20240914.{star,toml}       # versioned recipe + metadata
 ├── toolchain-configs/                        # deprecated ctng defconfigs (no active rebuilds)
 │   ├── gnu-plct-xthead/
 │   ├── gnu-plct-rv64ilp32-elf/
 │   ├── thead-toolchain-musl.host-*.defconfig
 │   └── loongarch64-unknown-none*.defconfig
 └── legacy/
-    └── ruyi-build-ctng          # deprecated: for archival ctng configs only
+    ├── ruyi-build-ctng          # deprecated: for archival ctng configs only
+    └── ruyi-build-dynamorio     # deprecated: superseded by recipe
 ```
 
-The remaining active `ruyi-build-*-inner` scripts (`box64`, `dynamorio`,
+The remaining active `ruyi-build-*-inner` scripts (`box64`,
 `wlink`, `git-repo`) stay at the repo root until their own drivers are
 migrated to recipes; at that point they will move into their respective
 `recipes/<driver>/` directories alongside their recipes.
@@ -337,7 +342,7 @@ remain in `toolchain-configs/` for archival reference only.
 - Migration of `gnu-plct-xthead`, `gnu-plct-rv64ilp32-elf`,
   `thead-musl`, `loongarch64-none` — deprecated, no active rebuild
   expected; defconfigs remain for archival reference.
-- Migration of `llvm`, `box64`, `dynamorio`, `wlink`,
+- Migration of `llvm`, `box64`, `wlink`,
   `package-git-repo` — wait for follow-up roadmap.
 - Any change to `ci/` or `.github/workflows/`. CI migration waits until
   after publishing is automated upstream.
