@@ -15,7 +15,7 @@ load("ruyi-build://lib/images.star", "pkgbuilder_image_tag")
 load("ruyi-build://lib/paths.star", "repo_host_path")
 
 
-def ctng_invocation(ctx, defconfig_path, artifact_globs, builder_tag = None):
+def ctng_invocation(ctx, defconfig_path, artifact_globs, host_triplet = "", builder_tag = None):
     """Plan a ``ruyi-build-ctng-inner`` run for one defconfig.
 
     Mirrors the mount set of the legacy ``ruyi-build-ctng`` wrapper:
@@ -26,9 +26,18 @@ def ctng_invocation(ctx, defconfig_path, artifact_globs, builder_tag = None):
     project's ``output_dir``) identifying the tarballs produced by this
     defconfig. Callers should pass a glob specific enough not to match
     unrelated artifacts from previous runs.
+
+    If ``host_triplet`` is non-empty, the inner script appends
+    ``CT_CANADIAN=y`` and ``CT_HOST="<triplet>"`` to the defconfig
+    before invoking ct-ng, so that a single seed defconfig can serve
+    both native (amd64) and cross (arm64, riscv64) builds.
     """
 
     image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
+
+    env = {}
+    if host_triplet:
+        env["CTNG_HOST_TRIPLET"] = host_triplet
 
     return ctx.subprocess(
         argv = docker_run(
@@ -45,9 +54,10 @@ def ctng_invocation(ctx, defconfig_path, artifact_globs, builder_tag = None):
                     ctx.repo_path("ruyi-build-ctng-inner"),
                     "/usr/local/bin/ruyi-build-ctng-inner",
                 ),
-                (defconfig_path, "/tmp/input.defconfig"),
+                (defconfig_path, "/tmp/seed.defconfig"),
             ],
-            argv = ["ruyi-build-ctng-inner", "/tmp/input.defconfig"],
+            env = env,
+            argv = ["ruyi-build-ctng-inner", "/tmp/seed.defconfig"],
         ),
         cwd = ctx.repo_root,
         produces = [ctx.artifact(glob = g) for g in artifact_globs],
