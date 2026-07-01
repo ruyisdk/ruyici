@@ -4,9 +4,11 @@ set -e
 
 ARCH="${1:-amd64}"
 
-P="dynamorio-10.93.19979"
-PV="10.93.19979"
-RUYI_DATESTAMP=20240914
+: "${P:=dynamorio-10.93.19979}"
+: "${PV:=10.93.19979}"
+: "${RUYI_DATESTAMP:=20240914}"
+: "${SRC_URI:=https://github.com/DynamoRIO/dynamorio.git}"
+: "${SRC_REF:=cronbuild-10.93.19979}"
 
 case "$ARCH" in
 amd64|arm64|riscv64)
@@ -21,7 +23,7 @@ OUT_P="dynamorio-riscv-$PV-ruyi.$RUYI_DATESTAMP"
 INSTALL_ROOT="/tmp/prefix/$OUT_P"
 
 pushd /tmp
-    git clone --depth 1 --recurse-submodules -j4 https://github.com/DynamoRIO/dynamorio.git -b "cronbuild-${PV}"
+    git clone --depth 1 --recurse-submodules -j4 "$SRC_URI" -b "$SRC_REF"
 popd
 
 SRC_DIR="/tmp/dynamorio"
