@@ -51,7 +51,7 @@ def ctng_invocation(ctx, defconfig_path, artifact_globs, host_triplet = "", buil
             mounts_ro = [
                 (repo_host_path(ctx, "toolchain-patches"), "/patches"),
                 (
-                    ctx.repo_path("ruyi-build-ctng-inner"),
+                    ctx.repo_path("recipes/ctng/ruyi-build-ctng-inner"),
                     "/usr/local/bin/ruyi-build-ctng-inner",
                 ),
                 (defconfig_path, "/tmp/seed.defconfig"),
