@@ -17,6 +17,9 @@ small Starlark file that declares one or more scheduled builds:
 ruyi admin build-package ./recipes/ctng/gnu-upstream.star
 ruyi admin build-package ./recipes/qemu/upstream-20250908.star \
     -v src=/path/to/qemu-10.0.4.tar.xz
+ruyi admin build-package ./recipes/llvm/upstream-20250915.star
+ruyi admin build-package ./recipes/llvm/upstream-20250915.star \
+    -v src=/path/to/llvm-project-21.1.1.src.tar.xz
 ```
 
 `--dry-run` prints the rendered `docker run` argv without executing
