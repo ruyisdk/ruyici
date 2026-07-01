@@ -225,3 +225,70 @@ def llvm_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
         cwd = ctx.repo_root,
         produces = [ctx.artifact(glob = artifact_glob)],
     )
+
+
+def dynamorio_invocation(ctx, config, arch, builder_tag = None):
+    """Plan a ``ruyi-build-dynamorio-inner`` run.
+
+    Mirrors the mount set of the legacy ``ruyi-build-dynamorio``
+    wrapper: ``out`` and ``work`` (rw), the inner script (ro). Uses
+    ``--user root`` per the legacy wrapper (FIXME carried over).
+    Configuration that the legacy wrapper hardcoded in the inner
+    script is passed as environment variables; ``config`` is a dict
+    of those variables and must carry at least:
+
+    ``P``, ``PV``, ``RUYI_DATESTAMP``, ``SRC_URI``, ``SRC_REF``.
+
+    Artifact glob is derived from ``arch``:
+
+    ``dynamorio-riscv-{PV}-ruyi.{RUYI_DATESTAMP}.{arch}.tar.zst``
+    """
+
+    if arch not in ("amd64", "arm64", "riscv64"):
+        fail(
+            "dynamorio_invocation: arch must be one of amd64/arm64/riscv64 "
+            + "(got %r)" % arch,
+        )
+
+    _required = [
+        "P",
+        "PV",
+        "RUYI_DATESTAMP",
+        "SRC_URI",
+        "SRC_REF",
+    ]
+    for k in _required:
+        if k not in config:
+            fail("dynamorio_invocation: config is missing required key %r" % k)
+
+    image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
+
+    artifact_glob = "dynamorio-riscv-%s-ruyi.%s.%s.tar.zst" % (
+        config["PV"],
+        config["RUYI_DATESTAMP"],
+        arch,
+    )
+
+    return ctx.subprocess(
+        argv = docker_run(
+            image = image,
+            mounts_rw = [
+                (repo_host_path(ctx, "out"), "/out"),
+                (repo_host_path(ctx, "work"), "/work"),
+            ],
+            mounts_ro = [
+                (
+                    ctx.repo_path("recipes/dynamorio/ruyi-build-dynamorio-inner"),
+                    "/usr/local/bin/ruyi-build-dynamorio-inner",
+                ),
+            ],
+            env = config,
+            extra_docker_args = ["--user", "root"],
+            argv = [
+                "ruyi-build-dynamorio-inner",
+                arch,
+            ],
+        ),
+        cwd = ctx.repo_root,
+        produces = [ctx.artifact(glob = artifact_glob)],
+    )
