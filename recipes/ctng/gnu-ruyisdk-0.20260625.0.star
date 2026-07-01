@@ -4,4 +4,8 @@ RUYI = ruyi_plugin_rev(1)
 
 load("ruyi-build://recipes/ctng/ctng-toolchain.star", "ctng_toolchain")
 
-ctng_toolchain(RUYI, "gnu-ruyisdk-0.20260625.0")
+data = RUYI.load_toml(
+    "ruyi-build-data://recipes/ctng/gnu-ruyisdk-0.20260625.0.toml",
+)
+for name, fn in ctng_toolchain(data).items():
+    RUYI.build.schedule_build(fn, name = name)

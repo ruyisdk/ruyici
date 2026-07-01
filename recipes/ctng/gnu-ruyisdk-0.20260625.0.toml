@@ -7,6 +7,8 @@
 # (e.g. "6fdcde8c3e77") which varies across builds of the same
 # datestamp.
 
+defconfig = "recipes/ctng/gnu-ruyisdk-0.20260625.0.defconfig.in"
+
 [artifacts.amd64]
 globs = ["RuyiSDK-*-RuyiSDK-Sources-*-riscv64-ruyisdk-linux-gnu.tar.xz"]
 

@@ -3,6 +3,8 @@
 # builder (no HOST- prefix); arm64 and riscv64 are cross builds
 # (HOST-aarch64-linux-gnu- / HOST-riscv64-linux-gnu- prefix).
 
+defconfig = "recipes/ctng/gnu-upstream-0.20260201.0.defconfig.in"
+
 [artifacts.amd64]
 globs = ["RuyiSDK-*-Upstream-Sources-riscv64-unknown-linux-gnu.tar.xz"]
 
