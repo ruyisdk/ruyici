@@ -142,3 +142,76 @@ def qemu_invocation(
         cwd = ctx.repo_root,
         produces = produces,
     )
+
+
+def llvm_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
+    """Plan a ``ruyi-build-llvm-inner`` run.
+
+    Mirrors the mount set of the legacy ``ruyi-build-llvm`` wrapper:
+    ``out`` and ``work`` (rw), the inner script and the optional source
+    tarball (ro), and ``/tmp/mem`` as a real tmpfs. Configuration that
+    the legacy wrapper read from a sourced shell file is passed as
+    environment variables instead; ``config`` is a dict of those
+    variables and must carry at least:
+
+    ``P``, ``PV``, ``RUYI_DATESTAMP``, ``SRC_URI``.
+
+    Additional optional keys such as ``TAR_STRIP_COMPONENTS``,
+    ``LLVM_VENDOR``, ``CLANG_VENDOR``, ``CLANG_REPOSITORY_STRING``, and
+    ``BUG_REPORT_URL`` may also be included and are passed through
+    verbatim.
+
+    Artifact glob is derived from ``arch``:
+
+    ``{P}.ruyi-{RUYI_DATESTAMP}.{arch}.tar.zst``
+    """
+
+    if arch not in ("amd64", "arm64", "riscv64"):
+        fail("llvm_invocation: arch must be one of amd64/arm64/riscv64 (got %r)" % arch)
+
+    _required = [
+        "P",
+        "PV",
+        "RUYI_DATESTAMP",
+        "SRC_URI",
+    ]
+    for k in _required:
+        if k not in config:
+            fail("llvm_invocation: config is missing required key %r" % k)
+
+    image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
+
+    mounts_ro = [
+        (
+            ctx.repo_path("ruyi-build-llvm-inner"),
+            "/usr/local/bin/ruyi-build-llvm-inner",
+        ),
+    ]
+    if src_tarball:
+        mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
+
+    artifact_glob = "%s.ruyi-%s.%s.tar.zst" % (
+        config["P"],
+        config["RUYI_DATESTAMP"],
+        arch,
+    )
+
+    return ctx.subprocess(
+        argv = docker_run(
+            image = image,
+            mounts_rw = [
+                (repo_host_path(ctx, "out"), "/out"),
+                (repo_host_path(ctx, "work"), "/work"),
+            ],
+            mounts_ro = mounts_ro,
+            tmpfs = ["/tmp/mem"],
+            env = config,
+            argv = [
+                "ruyi-build-llvm-inner",
+                "",
+                arch,
+            ],
+        ),
+        cwd = ctx.repo_root,
+        produces = [ctx.artifact(glob = artifact_glob)],
+    )
