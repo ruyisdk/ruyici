@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 
 # shellcheck source-path=SOURCE_DIR
 source "$MY_DIR"/containers/_image_tag_base.sh
