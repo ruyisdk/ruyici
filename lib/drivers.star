@@ -114,10 +114,10 @@ def qemu_invocation(
     image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
 
     mounts_ro = [
-        (
-            ctx.repo_path("ruyi-build-qemu-inner"),
-            "/usr/local/bin/ruyi-build-qemu-inner",
-        ),
+            (
+                ctx.repo_path("recipes/qemu/ruyi-build-qemu-inner"),
+                "/usr/local/bin/ruyi-build-qemu-inner",
+            ),
     ]
     if src_tarball:
         mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
