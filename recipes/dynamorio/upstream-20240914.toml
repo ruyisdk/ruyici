@@ -1,0 +1,10 @@
+# Build metadata for DynamoRIO upstream 20240914 snapshot.
+#
+# The inner script uses these environment variables to drive
+# the git-clone, cmake, and ninja build.
+
+P = "dynamorio-10.93.19979"
+PV = "10.93.19979"
+RUYI_DATESTAMP = "20240914"
+SRC_URI = "https://github.com/DynamoRIO/dynamorio.git"
+SRC_REF = "cronbuild-10.93.19979"
