@@ -6,10 +6,14 @@ set -e
 
 export CT_PREFIX=/opt/ruyi
 
-#ls -alF /out
-#ls -alF /src
-#ls -alF /work
-
 cd /work
+
+if [[ -n "${CTNG_HOST_TRIPLET-}" ]]; then
+    cp "$1" /tmp/rendered.defconfig
+    printf 'CT_CANADIAN=y\nCT_HOST="%s"\n' "$CTNG_HOST_TRIPLET" \
+        >> /tmp/rendered.defconfig
+    set -- /tmp/rendered.defconfig
+fi
+
 ct-ng defconfig DEFCONFIG="$1"
 exec schedtool -D -n 5 -e ct-ng build
