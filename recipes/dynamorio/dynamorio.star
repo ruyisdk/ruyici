@@ -18,7 +18,7 @@ RUYI = ruyi_plugin_rev(1)
 
 load("ruyi-build://lib/drivers.star", "dynamorio_invocation")
 
-_HOSTS = ["amd64", "arm64", "riscv64"]
+_HOSTS = ["riscv64"]
 
 
 def dynamorio_build(data, hosts = None):
@@ -28,7 +28,7 @@ def dynamorio_build(data, hosts = None):
     match the ``dynamorio_invocation`` required config: ``P``, ``PV``,
     ``RUYI_DATESTAMP``, ``SRC_URI``, ``SRC_REF``.
 
-    ``hosts`` defaults to ``["amd64", "arm64", "riscv64"]``.
+    ``hosts`` defaults to riscv64-only.
     """
     if hosts == None:
         hosts = list(_HOSTS)
