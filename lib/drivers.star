@@ -292,3 +292,76 @@ def dynamorio_invocation(ctx, config, arch, builder_tag = None):
         cwd = ctx.repo_root,
         produces = [ctx.artifact(glob = artifact_glob)],
     )
+
+
+def box64_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
+    """Plan a ``ruyi-build-box64-inner`` run.
+
+    Mirrors the mount set of the legacy ``ruyi-build-box64`` wrapper:
+    ``out`` and ``work`` (rw), the inner script and the optional source
+    tarball (ro), and ``/tmp/mem`` as a real tmpfs.  Configuration that
+    the legacy wrapper read from a sourced shell file is passed as
+    environment variables instead; ``config`` is a dict of those
+    variables and must carry at least:
+
+    ``P``, ``PV``, ``RUYI_DATESTAMP``, ``SRC_URI``.
+
+    Additional optional keys such as ``TAR_STRIP_COMPONENTS`` and
+    ``USE_MEM`` may also be included and are passed through verbatim.
+
+    ``arch`` must be ``arm64`` or ``riscv64`` (amd64 is explicitly
+    rejected -- box64 emulates amd64, so building for the native host
+    is useless).
+
+    Artifact glob is derived from ``arch``:
+
+    ``{P}.{arch}.tar.zst``
+    """
+
+    if arch not in ("arm64", "riscv64"):
+        fail(
+            "box64_invocation: arch must be arm64 or riscv64 "
+            + "(got %r)" % arch,
+        )
+
+    _required = [
+        "P",
+        "PV",
+        "RUYI_DATESTAMP",
+        "SRC_URI",
+    ]
+    for k in _required:
+        if k not in config:
+            fail("box64_invocation: config is missing required key %r" % k)
+
+    image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
+
+    mounts_ro = [
+        (
+            ctx.repo_path("recipes/box64/ruyi-build-box64-inner"),
+            "/usr/local/bin/ruyi-build-box64-inner",
+        ),
+    ]
+    if src_tarball:
+        mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
+
+    artifact_glob = "%s.%s.tar.zst" % (config["P"], arch)
+
+    return ctx.subprocess(
+        argv = docker_run(
+            image = image,
+            mounts_rw = [
+                (repo_host_path(ctx, "out"), "/out"),
+                (repo_host_path(ctx, "work"), "/work"),
+            ],
+            mounts_ro = mounts_ro,
+            tmpfs = ["/tmp/mem"],
+            env = config,
+            argv = [
+                "ruyi-build-box64-inner",
+                arch,
+            ],
+        ),
+        cwd = ctx.repo_root,
+        produces = [ctx.artifact(glob = artifact_glob)],
+    )
