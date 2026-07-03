@@ -1,0 +1,10 @@
+# Build metadata for box64 upstream git snapshot 20240901.
+#
+# The inner script uses these environment variables to drive
+# the cmake and ninja build.
+
+P = "box64-upstream-0.3.1-pre.ruyi.20240901+git.9178effd"
+PV = "0.3.1-pre.ruyi.20240901+git.9178effd"
+RUYI_DATESTAMP = "20240901"
+SRC_URI = "https://mirror.iscas.ac.cn/ruyisdk/dist/box64-9178effd9f837b52107c1943e9736cf2dfc5d40d.src.tar.zst"
+TAR_STRIP_COMPONENTS = 2
