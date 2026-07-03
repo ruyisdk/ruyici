@@ -1,0 +1,103 @@
+#!/bin/bash
+
+set -eu
+
+ARCH="${1:-arm64}"
+
+: "${P:=box64-upstream-0.0.0}"
+: "${PV:=0.0.0}"
+: "${RUYI_DATESTAMP:=19700101}"
+: "${SRC_URI:=}"
+: "${TAR_STRIP_COMPONENTS:=1}"
+: "${USE_MEM:=true}"
+
+echo "ARCH=$ARCH"
+echo "P=$P"
+echo "PV=$PV"
+echo "RUYI_DATESTAMP=$RUYI_DATESTAMP"
+echo "SRC_URI=$SRC_URI"
+echo "TAR_STRIP_COMPONENTS=$TAR_STRIP_COMPONENTS"
+echo "USE_MEM=$USE_MEM"
+
+if "$USE_MEM"; then
+    TMP=/tmp/mem
+else
+    TMP=/tmp
+fi
+
+SRC_DIR="${TMP}/box64-src"
+INSTALL_ROOT=${TMP}/prefix/"$P"
+
+CMAKE_ARGS=(
+    -G Ninja
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX=/
+)
+
+case "$ARCH" in
+    amd64)
+        echo box64 is not buildable for amd64 >&2
+        exit 1
+        ;;
+    arm64)
+        CMAKE_ARGS+=(
+            -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc"
+            -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++"
+            -DARM64=ON
+        )
+        ;;
+    riscv64)
+        CMAKE_ARGS+=(
+            -DCMAKE_C_COMPILER="riscv64-linux-gnu-gcc"
+            -DCMAKE_CXX_COMPILER="riscv64-linux-gnu-g++"
+            -DRV64=ON
+        )
+        ;;
+    *)
+        echo "invalid ARCH: choices are arm64 or riscv64 (got $ARCH)" >&2
+        exit 1
+        ;;
+esac
+
+# download source if not pre-mounted at /tmp/src.tar.xz
+if [[ ! -e /tmp/src.tar.xz ]]; then
+    wget -O /tmp/src.tar.xz "$SRC_URI"
+fi
+
+mkdir "$SRC_DIR"
+pushd "$SRC_DIR"
+    tar xf /tmp/src.tar.xz --strip-components="${TAR_STRIP_COMPONENTS:=1}"
+    ls -l
+
+    # Unguard install targets.  box64's CMakeLists.txt wraps all install()
+    # calls inside ``if(NOT _x86 AND NOT _x86_64) ... endif()``, which
+    # fails when cross-compiling on an amd64 host because
+    # CMAKE_SYSTEM_PROCESSOR is not detected as x86.  Comment out the
+    # entire guard block using depth-aware awk so that nested if/endif
+    # pairs inside the block are handled correctly.
+    awk '
+        /^if\(NOT _x86 AND NOT _x86_64\)$/ {
+            depth = 1
+            print "# " $0
+            next
+        }
+        depth > 0 {
+            if (/^if\(/) depth++
+            if (/^endif\(\)$/) depth--
+            print "# " $0
+            next
+        }
+        { print }
+    ' CMakeLists.txt > CMakeLists.txt.tmp && mv CMakeLists.txt.tmp CMakeLists.txt
+popd
+
+mkdir "$TMP/build"
+pushd "$TMP/build"
+    cmake "$SRC_DIR" "${CMAKE_ARGS[@]}"
+    ninja
+    DESTDIR="$INSTALL_ROOT" ninja install
+popd
+
+pushd "$INSTALL_ROOT"/..
+    tar --zstd -cvf /out/"$P"."$ARCH".tar.zst ./"$P"
+popd
