@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=linux/amd64 rust:1.87-alpine3.21
+FROM --platform=linux/amd64 rust:1.96-alpine3.24
 
 RUN <<DOCKEREOF
 apk add --no-cache bash curl git musl-dev

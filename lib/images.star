@@ -9,7 +9,7 @@ _UNIFIED_TAGS = {
 }
 
 _RUST_MUSL_TAGS = {
-    "amd64": "ghcr.io/ruyisdk/ruyi-ci-pkgbuilder-rust-musl:20250524",
+    "amd64": "ghcr.io/ruyisdk/ruyi-ci-pkgbuilder-rust-musl:20260704",
 }
 
 _TABLES = {
