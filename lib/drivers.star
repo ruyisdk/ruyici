@@ -365,3 +365,67 @@ def box64_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
         cwd = ctx.repo_root,
         produces = [ctx.artifact(glob = artifact_glob)],
     )
+
+
+def wlink_invocation(ctx, config, arch, builder_tag = None):
+    """Plan a ``ruyi-build-wlink-inner`` run.
+
+    Mirrors the mount set of the legacy ``ruyi-build-wlink`` wrapper:
+    ``out`` and ``work`` (rw), the inner script (ro). Uses the
+    ``rust-musl`` builder image instead of the ``unified`` one.
+    Configuration that the legacy wrapper supplied as command-line
+    arguments is passed as environment variables; ``config`` is a
+    dict of those variables and must carry at least:
+
+    ``P``, ``PV``, ``RUYI_DATESTAMP``, ``SRC_URI``, ``SRC_REF``.
+
+    ``arch`` must be ``aarch64``, ``riscv64``, or ``x86_64``.
+
+    Artifact glob is derived from ``arch``:
+
+    ``wlink-*.{arch}.tar.gz``
+    """
+
+    if arch not in ("aarch64", "riscv64", "x86_64"):
+        fail(
+            "wlink_invocation: arch must be aarch64, riscv64 or x86_64 "
+            + "(got %r)" % arch,
+        )
+
+    _required = [
+        "P",
+        "PV",
+        "RUYI_DATESTAMP",
+        "SRC_URI",
+        "SRC_REF",
+    ]
+    for k in _required:
+        if k not in config:
+            fail("wlink_invocation: config is missing required key %r" % k)
+
+    image = builder_tag if builder_tag else pkgbuilder_image_tag("rust-musl", "amd64")
+
+    artifact_glob = "wlink-*.%s.tar.gz" % arch
+
+    return ctx.subprocess(
+        argv = docker_run(
+            image = image,
+            mounts_rw = [
+                (repo_host_path(ctx, "out"), "/out"),
+                (repo_host_path(ctx, "work"), "/work"),
+            ],
+            mounts_ro = [
+                (
+                    ctx.repo_path("recipes/wlink/ruyi-build-wlink-inner"),
+                    "/usr/local/bin/ruyi-build-wlink-inner",
+                ),
+            ],
+            env = config,
+            argv = [
+                "ruyi-build-wlink-inner",
+                arch,
+            ],
+        ),
+        cwd = ctx.repo_root,
+        produces = [ctx.artifact(glob = artifact_glob)],
+    )

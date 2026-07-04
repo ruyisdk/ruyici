@@ -1,0 +1,10 @@
+# Build metadata for wlink upstream snapshot at commit 217f0e51.
+#
+# The inner script uses these environment variables to drive
+# the git clone and cargo build.
+
+P = "wlink-upstream-0.1.1-ruyi.20250524"
+PV = "0.1.1-ruyi.20250524"
+RUYI_DATESTAMP = "20250524"
+SRC_URI = "https://github.com/ch32-rs/wlink.git"
+SRC_REF = "217f0e51"

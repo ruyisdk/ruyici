@@ -1,0 +1,69 @@
+#!/bin/bash
+set -e
+
+ARCH="${1:-aarch64}"
+
+: "${P:=wlink-upstream-0.1.1-ruyi.20250524}"
+: "${PV:=0.1.1-ruyi.20250524}"
+: "${RUYI_DATESTAMP:=20250524}"
+: "${SRC_URI:=https://github.com/ch32-rs/wlink.git}"
+: "${SRC_REF:=217f0e51}"
+
+case "$ARCH" in
+aarch64|riscv64|x86_64)
+    ;;
+*)
+    echo "invalid ARCH: choices are aarch64, riscv64, x86_64" >&2
+    exit 1
+    ;;
+esac
+
+rust_target_for_arch() {
+    case "$1" in
+    aarch64) echo aarch64-unknown-linux-musl ;;
+    riscv64) echo riscv64gc-unknown-linux-musl ;;
+    x86_64) echo x86_64-unknown-linux-musl ;;
+    esac
+}
+
+echo "P            $P"
+echo "PV           $PV"
+echo "ARCH         $ARCH"
+echo "DATESTAMP    $RUYI_DATESTAMP"
+echo "SRC_URI      $SRC_URI"
+echo "SRC_REF      $SRC_REF"
+env
+
+# work around builder image defects
+[ -e "$CARGO_HOME"/config.toml ] || mv ~/.cargo/config.toml "$CARGO_HOME"/config.toml
+[ -e /usr/include/linux/magic.h ] || apk add --no-cache linux-headers
+
+pushd /tmp
+    rm -rf wlink
+    git clone "$SRC_URI" -b "$SRC_REF" wlink
+    pushd wlink
+        version_desc="$(git describe --tags --abbrev=8 --match='v*')"
+        version_desc="${version_desc%%-*}"
+        version_desc="${version_desc#v}"
+        git_commit="$(git rev-parse --short=8 HEAD)"
+        version_desc="${version_desc}-ruyi.${RUYI_DATESTAMP}+git.${git_commit}"
+    popd
+popd
+
+SOURCE_EPOCH="$(echo "$RUYI_DATESTAMP" | sed -E "s/(....)(..)(..)/\1-\2-\3/")T00:00:00+08:00"
+export SOURCE_EPOCH
+
+rust_target="$(rust_target_for_arch "$ARCH")"
+
+cd /tmp/wlink
+cargo build --release --target="$rust_target"
+
+out_tmpdir="/tmp/out/wlink-$version_desc"
+mkdir -p "$out_tmpdir/bin"
+cp target/"$rust_target"/release/wlink "$out_tmpdir"/bin/wlink
+
+pushd /tmp/out
+    tar czvf "/out/wlink-$version_desc.$ARCH.tar.gz" "wlink-$version_desc"
+popd
+
+rm -rf /tmp/out /tmp/wlink
