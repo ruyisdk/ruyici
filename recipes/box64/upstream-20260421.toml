@@ -1,0 +1,10 @@
+# Build metadata for box64 upstream release v0.4.2.
+#
+# The inner script uses these environment variables to drive
+# the cmake and ninja build.
+
+P = "box64-upstream-0.4.2-ruyi.20260421"
+PV = "0.4.2-ruyi.20260421"
+RUYI_DATESTAMP = "20260421"
+SRC_URI = "https://github.com/ptitSeb/box64/archive/refs/tags/v0.4.2.tar.gz"
+TAR_STRIP_COMPONENTS = 1
