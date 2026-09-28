@@ -367,8 +367,8 @@ def box64_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
     Additional optional keys such as ``TAR_STRIP_COMPONENTS`` and
     ``USE_MEM`` may also be included and are passed through verbatim.
 
-    ``arch`` must be ``arm64`` or ``riscv64`` (amd64 is explicitly
-    rejected -- box64 emulates amd64, so building for the native host
+    ``arch`` must be ``aarch64`` or ``riscv64`` (x86_64 is explicitly
+    rejected -- box64 emulates x86_64, so building for the native host
     is useless).
 
     Artifact glob is derived from ``arch``:
@@ -376,9 +376,9 @@ def box64_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
     ``{P}.{arch}.tar.zst``
     """
 
-    if arch not in ("arm64", "riscv64"):
+    if arch not in ("aarch64", "riscv64"):
         fail(
-            "box64_invocation: arch must be arm64 or riscv64 "
+            "box64_invocation: arch must be aarch64 or riscv64 "
             + "(got %r)" % arch,
         )
 

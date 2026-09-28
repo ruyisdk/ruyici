@@ -2,7 +2,7 @@
 
 set -eu
 
-ARCH="${1:-arm64}"
+ARCH="${1:-aarch64}"
 
 : "${P:=box64-upstream-0.0.0}"
 : "${PV:=0.0.0}"
@@ -37,11 +37,11 @@ CMAKE_ARGS=(
 )
 
 case "$ARCH" in
-    amd64)
-        echo box64 is not buildable for amd64 >&2
+    x86_64)
+        echo box64 is not buildable for x86_64 >&2
         exit 1
         ;;
-    arm64)
+    aarch64)
         CMAKE_ARGS+=(
             -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc"
             -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++"
@@ -58,7 +58,7 @@ case "$ARCH" in
         )
         ;;
     *)
-        echo "invalid ARCH: choices are arm64 or riscv64 (got $ARCH)" >&2
+        echo "invalid ARCH: choices are aarch64 or riscv64 (got $ARCH)" >&2
         exit 1
         ;;
 esac

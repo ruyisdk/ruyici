@@ -18,7 +18,7 @@ RUYI = ruyi_plugin_rev(1)
 
 load("ruyi-build://lib/drivers.star", "box64_invocation")
 
-_HOSTS = ["arm64", "riscv64"]
+_HOSTS = ["aarch64", "riscv64"]
 
 
 def box64_build(data, hosts = None):
@@ -29,7 +29,7 @@ def box64_build(data, hosts = None):
     ``RUYI_DATESTAMP``, ``SRC_URI``.  ``TAR_STRIP_COMPONENTS`` and
     ``USE_MEM`` are optional.
 
-    ``hosts`` defaults to arm64 and riscv64 (amd64 is rejected).
+    ``hosts`` defaults to aarch64 and riscv64 (x86_64 is rejected).
     """
     if hosts == None:
         hosts = list(_HOSTS)
