@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+#
+# Native macOS (Apple Silicon) counterpart of ruyi-build-ctng-inner.
+# Runs directly on the host; there is no container. Keep this script
+# compatible with the stock macOS bash 3.2.
+#
+# The host must be provisioned beforehand:
+#
+#   * a case-sensitive APFS volume for the heavy working directories
+#   * a recent ct-ng built locally (building ct-ng itself additionally
+#     needs ncurses, e.g. from Homebrew) and available on PATH
+#   * the GNU userland tools ct-ng expects (m4, make, sed, awk, tar,
+#     coreutils; NOT binutils or gcc -- the system clang is the host
+#     compiler), plus a recent python3
+#
+# Configuration is via environment variables; the first six are required:
+#
+#   CTNG_BUILD_VOLUME   case-sensitive volume path, e.g.
+#                       /Volumes/RuyiSDKBuild
+#   CTNG_OUT_DIR        directory receiving the result tarballs
+#   CTNG_PATCH_DIR      toolchain-patches directory (CT_LOCAL_PATCH_DIR)
+#   CTNG_TARBALL_NAME   tarball name component, e.g. "gnu-ruyisdk"
+#   CTNG_DATESTAMP      datestamp component, e.g. "20260625"
+#   CTNG_HOST_SUFFIX    host suffix component, e.g. "macos-arm64"
+#   CTNG_DEBUG          optional; unless empty or "0", enable
+#                       CT_DEBUG_CT and CT_DEBUG_CT_SAVE_STEPS
+#   CT_NG               optional; ct-ng binary to use (default: ct-ng)
+#
+# The result tarball is named
+# "<CTNG_TARBALL_NAME>-<CTNG_DATESTAMP>.<CTNG_HOST_SUFFIX>.tar.*".
+
+set -eu
+
+die() {
+    echo "error: $*" >&2
+    exit 1
+}
+
+setup_path() {
+    # ct-ng wants the GNU userland; on macOS these come from Homebrew's
+    # keg-only gnubin directories.
+    command -v brew > /dev/null 2>&1 || return 0
+
+    local brew_prefix
+    brew_prefix=$(brew --prefix)
+
+    local formula dir
+    for formula in coreutils gnu-tar gnu-sed gawk m4 make grep findutils; do
+        dir="$brew_prefix/opt/$formula/libexec/gnubin"
+        if [[ -d $dir ]]; then
+            PATH="$dir:$PATH"
+        fi
+    done
+    export PATH
+}
+
+check_case_sensitive() {
+    local probe_lc="$CTNG_BUILD_VOLUME/.ruyici-case-probe"
+    local probe_uc="$CTNG_BUILD_VOLUME/.RUYICI-CASE-PROBE"
+    rm -f "$probe_lc" "$probe_uc"
+    touch "$probe_uc"
+    if [[ -e $probe_lc ]]; then
+        rm -f "$probe_uc"
+        die "build volume is not case-sensitive: $CTNG_BUILD_VOLUME"
+    fi
+    rm -f "$probe_uc"
+}
+
+preflight() {
+    [[ $(uname -s) == Darwin ]] || die "this driver only runs on macOS"
+    [[ $(uname -m) == arm64 ]] || die "this driver only supports Apple Silicon (arm64)"
+
+    setup_path
+
+    local missing=0
+    local tool
+    for tool in "$CT_NG" gm4 gmake gsed gawk gtar python3 git xz clang; do
+        if ! command -v "$tool" > /dev/null 2>&1; then
+            echo "preflight: missing required tool: $tool" >&2
+            missing=1
+        fi
+    done
+    if ! command -v curl > /dev/null 2>&1 && ! command -v wget > /dev/null 2>&1; then
+        echo "preflight: missing required tool: curl or wget" >&2
+        missing=1
+    fi
+    [[ $missing == 0 ]] || die "install the missing tools (e.g. brew install coreutils gnu-tar gnu-sed gawk m4 make) and re-run"
+
+    # gdb and some ct-ng scripts need a reasonably recent python3; the
+    # stock python3 on older macOS releases is too old.
+    if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)'; then
+        die "python3 >= 3.8 is required (found: $(python3 --version 2>&1))"
+    fi
+
+    if (( BASH_VERSINFO[0] < 4 )); then
+        echo "preflight: warning: running under bash $BASH_VERSION; a newer bash (brew install bash) is recommended" >&2
+    fi
+
+    "$CT_NG" version > /dev/null 2>&1 || die "ct-ng is not runnable: $CT_NG (build it first; ncurses from Homebrew is needed for its kconfig)"
+
+    [[ -d $CTNG_BUILD_VOLUME ]] || die "build volume does not exist: $CTNG_BUILD_VOLUME"
+    [[ -w $CTNG_BUILD_VOLUME ]] || die "build volume is not writable: $CTNG_BUILD_VOLUME"
+    check_case_sensitive
+}
+
+render_defconfig() {
+    local seed=$1
+    local out=$2
+    local src_dir=$3
+    local work_dir=$4
+
+    # Replace the container-specific paths with the host-side ones and
+    # drop CT_GDB_CROSS_STATIC (static linking is not a thing on macOS).
+    # CT_PREFIX_DIR needs no override: the seed honours $CT_PREFIX,
+    # which main() exports. The tarball filename override follows the
+    # same kconfig last-value-wins rule as the container path, but the
+    # line is rewritten here anyway to keep the rendered file
+    # self-explanatory.
+    grep -v -E '^CT_(LOCAL_TARBALLS_DIR|WORK_DIR|TARBALL_RESULT_DIR|TARBALL_RESULT_FILENAME|LOCAL_PATCH_DIR|GDB_CROSS_STATIC|LOAD)=' \
+        "$seed" > "$out"
+
+    {
+        printf 'CT_LOCAL_TARBALLS_DIR="%s"\n' "$src_dir"
+        printf 'CT_WORK_DIR="%s"\n' "$work_dir"
+        printf 'CT_TARBALL_RESULT_DIR="%s"\n' "$CTNG_OUT_DIR"
+        printf 'CT_LOCAL_PATCH_DIR="%s"\n' "$CTNG_PATCH_DIR"
+        printf 'CT_TARBALL_RESULT_FILENAME="%s-%s.%s"\n' \
+            "$CTNG_TARBALL_NAME" "$CTNG_DATESTAMP" "$CTNG_HOST_SUFFIX"
+        # Hardcoded load cap: the organization has a single macOS build
+        # rig, so there is no point making this configurable yet.
+        printf 'CT_LOAD="10"\n'
+        if [[ -n ${CTNG_DEBUG-} && ${CTNG_DEBUG-} != 0 ]]; then
+            printf 'CT_DEBUG_CT=y\n'
+            printf 'CT_DEBUG_CT_SAVE_STEPS=y\n'
+        fi
+    } >> "$out"
+}
+
+main() {
+    : "${CT_NG:=ct-ng}"
+    : "${CTNG_BUILD_VOLUME:?set to the case-sensitive build volume, e.g. /Volumes/RuyiSDKBuild}"
+    : "${CTNG_OUT_DIR:?set to the directory receiving the result tarballs}"
+    : "${CTNG_PATCH_DIR:?set to the toolchain-patches directory}"
+    : "${CTNG_TARBALL_NAME:?set to the tarball name component, e.g. gnu-ruyisdk}"
+    : "${CTNG_DATESTAMP:?set to the datestamp component, e.g. 20260625}"
+    : "${CTNG_HOST_SUFFIX:?set to the host suffix component, e.g. macos-arm64}"
+
+    [[ $# == 1 && -f $1 ]] || die "usage: $0 <seed.defconfig> (with CTNG_* env vars set)"
+
+    preflight
+
+    local base="$CTNG_BUILD_VOLUME/ctng-work"
+    local src_dir="$base/src"
+    local work_dir="$base/work"
+    local prefix_dir="$base/prefix"
+    mkdir -p "$src_dir" "$work_dir" "$prefix_dir" "$CTNG_OUT_DIR"
+
+    export CT_PREFIX="$prefix_dir"
+
+    echo "build volume: $CTNG_BUILD_VOLUME"
+    echo "out dir:      $CTNG_OUT_DIR"
+    echo "patch dir:    $CTNG_PATCH_DIR"
+    echo "tarball:      $CTNG_TARBALL_NAME-$CTNG_DATESTAMP.$CTNG_HOST_SUFFIX.tar.*"
+    echo "ct-ng:        $(command -v "$CT_NG")"
+
+    local rendered="$work_dir/ruyici-rendered.defconfig"
+    render_defconfig "$1" "$rendered" "$src_dir" "$work_dir"
+
+    cd "$work_dir"
+    "$CT_NG" defconfig DEFCONFIG="$rendered"
+
+    # No schedtool on macOS; best-effort niceness only.
+    ulimit -n 4096 2> /dev/null || true
+    exec nice -n 5 "$CT_NG" build
+}
+
+main "$@"

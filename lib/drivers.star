@@ -15,7 +15,18 @@ load("ruyi-build://lib/images.star", "pkgbuilder_image_tag")
 load("ruyi-build://lib/paths.star", "repo_host_path")
 
 
-def ctng_invocation(ctx, defconfig_path, artifact_globs, host_triplet = "", builder_tag = None):
+def ctng_invocation(
+        ctx,
+        defconfig_path,
+        artifact_globs,
+        host_triplet = "",
+        host_suffix = "",
+        tarball_name = "",
+        datestamp = "",
+        builder_tag = None,
+        containerize = True,
+        build_volume = "",
+        debug = False):
     """Plan a ``ruyi-build-ctng-inner`` run for one defconfig.
 
     Mirrors the mount set of the legacy ``ruyi-build-ctng`` wrapper:
@@ -31,13 +42,60 @@ def ctng_invocation(ctx, defconfig_path, artifact_globs, host_triplet = "", buil
     ``CT_CANADIAN=y`` and ``CT_HOST="<triplet>"`` to the defconfig
     before invoking ct-ng, so that a single seed defconfig can serve
     both native (amd64) and cross (arm64, riscv64) builds.
-    """
 
-    image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
+    If ``tarball_name`` is non-empty, the inner script overrides
+    ``CT_TARBALL_RESULT_FILENAME`` so the result tarball is named
+    ``<tarball_name>-<datestamp>.<host_suffix>.tar.*`` instead of the
+    seed's pkgversion-derived name. ``datestamp`` and ``host_suffix``
+    (e.g. ``"linux-amd64"``, ``"macos-arm64"``) are required in that
+    case.
+
+    If ``containerize`` is false, the build runs directly on the host
+    via the ``ruyi-build-ctng-inner-darwin`` script instead of docker;
+    ``build_volume`` (a case-sensitive volume hosting the heavy working
+    directories) is required in that case, and ``builder_tag`` is
+    ignored. The result tarballs still land in the project's
+    ``output_dir``.
+
+    If ``debug`` is true, ``CT_DEBUG_CT`` and ``CT_DEBUG_CT_SAVE_STEPS``
+    are appended to the rendered defconfig.
+    """
 
     env = {}
     if host_triplet:
         env["CTNG_HOST_TRIPLET"] = host_triplet
+    if tarball_name:
+        if not datestamp or not host_suffix:
+            fail(
+                "ctng_invocation: datestamp and host_suffix are required "
+                + "when tarball_name is set",
+            )
+        env["CTNG_TARBALL_NAME"] = tarball_name
+        env["CTNG_DATESTAMP"] = datestamp
+        env["CTNG_HOST_SUFFIX"] = host_suffix
+    if debug:
+        env["CTNG_DEBUG"] = "y"
+
+    if not containerize:
+        if not build_volume:
+            fail(
+                "ctng_invocation: build_volume is required for "
+                + "non-containerized builds",
+            )
+        env["CTNG_BUILD_VOLUME"] = build_volume
+        env["CTNG_OUT_DIR"] = repo_host_path(ctx, "out")
+        env["CTNG_PATCH_DIR"] = repo_host_path(ctx, "toolchain-patches")
+        return ctx.subprocess(
+            argv = [
+                ctx.repo_path("recipes/ctng/ruyi-build-ctng-inner-darwin"),
+                defconfig_path,
+            ],
+            cwd = ctx.repo_root,
+            env = env,
+            produces = [ctx.artifact(glob = g) for g in artifact_globs],
+        )
+
+    image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
 
     return ctx.subprocess(
         argv = docker_run(
