@@ -234,8 +234,8 @@ def llvm_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
     ``{P}.ruyi-{RUYI_DATESTAMP}.{arch}.tar.zst``
     """
 
-    if arch not in ("amd64", "arm64", "riscv64"):
-        fail("llvm_invocation: arch must be one of amd64/arm64/riscv64 (got %r)" % arch)
+    if arch not in ("x86_64", "aarch64", "riscv64"):
+        fail("llvm_invocation: arch must be one of x86_64/aarch64/riscv64 (got %r)" % arch)
 
     _required = [
         "P",

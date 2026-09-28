@@ -7,7 +7,7 @@ RUYI = ruyi_plugin_rev(1)
 
 load("ruyi-build://lib/drivers.star", "llvm_invocation")
 
-_HOSTS = ["amd64", "arm64", "riscv64"]
+_HOSTS = ["x86_64", "aarch64", "riscv64"]
 
 _PV = "21.1.1"
 _DATESTAMP = "20250915"

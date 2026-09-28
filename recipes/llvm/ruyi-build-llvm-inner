@@ -15,7 +15,7 @@ set -e
 # CLANG_VENDOR, CLANG_REPOSITORY_STRING, and BUG_REPORT_URL may also be
 # set through either mechanism.
 CONFIG_FILE="$1"
-ARCH="${2:-amd64}"
+ARCH="${2:-x86_64}"
 
 if [[ -n "$CONFIG_FILE" && -f "$CONFIG_FILE" ]]; then
     # e.g.
@@ -59,7 +59,7 @@ CFLAGS="-O2 -pipe -fPIC -Wno-error"
 CXXFLAGS="$CFLAGS"
 CMAKE_EXTRA_ARGS=()
 case "$ARCH" in
-    amd64)
+    x86_64)
         HOST_EXTRA_LIB_ROOT="$HOST_STATIC_LIB_ROOT"
         CMAKE_EXTRA_ARGS+=(
             -DCMAKE_C_COMPILER="clang"
@@ -78,10 +78,13 @@ case "$ARCH" in
         )
         ;;
 
-    arm64)
-        export QEMU_LD_PREFIX=/sysroot/arm64
+    aarch64)
+        # NB: the sysroot directory in the unified image follows the
+        # docker platform naming (arm64), not the ruyi-canonical arch.
+        sysroot_dir=/sysroot/arm64
+        export QEMU_LD_PREFIX="$sysroot_dir"
         triple=aarch64-linux-gnu
-        HOST_EXTRA_LIB_ROOT="/sysroot/${ARCH}/lib/${triple}"
+        HOST_EXTRA_LIB_ROOT="$sysroot_dir/lib/${triple}"
 
         cat > /tmp/toolchain.cmake <<EOF
 set(CMAKE_SYSTEM_NAME Linux)
@@ -103,13 +106,14 @@ EOF
             -DCMAKE_TOOLCHAIN_FILE=/tmp/toolchain.cmake
             -DLLVM_HOST_TRIPLE="$triple"
         )
-        unset triple
+        unset sysroot_dir triple
         ;;
 
     riscv64)
-        export QEMU_LD_PREFIX=/sysroot/riscv64
+        sysroot_dir=/sysroot/riscv64
+        export QEMU_LD_PREFIX="$sysroot_dir"
         triple=riscv64-linux-gnu
-        HOST_EXTRA_LIB_ROOT="/sysroot/${ARCH}/lib/${triple}"
+        HOST_EXTRA_LIB_ROOT="$sysroot_dir/lib/${triple}"
 
         cat > /tmp/toolchain.cmake <<EOF
 set(CMAKE_SYSTEM_NAME Linux)
@@ -137,7 +141,7 @@ EOF
 
             -DLLVM_HOST_TRIPLE="$triple"
         )
-        unset common_ldflags triple
+        unset common_ldflags sysroot_dir triple
         ;;
 esac
 
