@@ -112,5 +112,5 @@ pushd "$TMP/build"
 popd
 
 pushd "$INSTALL_ROOT"/..
-    tar --zstd -cvf /out/"$P"."$ARCH".tar.zst ./"$P"
+    tar --zstd -cvf /out/"$P".linux-"$ARCH".tar.zst ./"$P"
 popd

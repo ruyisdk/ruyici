@@ -222,5 +222,5 @@ pushd "$TMP/build"
 popd
 
 pushd "$INSTALL_ROOT"/..
-    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP"."$ARCH".tar.zst "./$P"
+    tar --zstd -cvf /out/"$P".ruyi-"$RUYI_DATESTAMP".linux-"$ARCH".tar.zst "./$P"
 popd

@@ -174,9 +174,9 @@ fi
 
 pushd "$INSTALL_ROOT"
     "$BUILD_USER" && \
-    tar --zstd -cvf "/out/qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
+    tar --zstd -cvf "/out/qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.linux-$ARCH.tar.zst" \
         "qemu-user-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
     "$BUILD_SYSTEM" && \
-    tar --zstd -cvf "/out/qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.$ARCH.tar.zst" \
+    tar --zstd -cvf "/out/qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP.linux-$ARCH.tar.zst" \
         "qemu-system-riscv-$build_flavor-$PV.ruyi-$RUYI_DATESTAMP"
 popd

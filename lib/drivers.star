@@ -146,8 +146,8 @@ def qemu_invocation(
 
     Artifact globs are derived from ``arch`` and ``flavor``:
 
-    * ``both`` or ``system`` -> ``qemu-system-riscv-<flavor>-*.<arch>.tar.zst``
-    * ``both`` or ``user``   -> ``qemu-user-riscv-<flavor>-*.<arch>.tar.zst``
+    * ``both`` or ``system`` -> ``qemu-system-riscv-<flavor>-*.linux-<arch>.tar.zst``
+    * ``both`` or ``user``   -> ``qemu-user-riscv-<flavor>-*.linux-<arch>.tar.zst``
     """
 
     if flavor not in ("both", "system", "user"):
@@ -183,11 +183,11 @@ def qemu_invocation(
     produces = []
     if flavor in ("both", "system"):
         produces.append(ctx.artifact(
-            glob = "qemu-system-riscv-%s-*.%s.tar.zst" % (build_flavor, arch),
+            glob = "qemu-system-riscv-%s-*.linux-%s.tar.zst" % (build_flavor, arch),
         ))
     if flavor in ("both", "user"):
         produces.append(ctx.artifact(
-            glob = "qemu-user-riscv-%s-*.%s.tar.zst" % (build_flavor, arch),
+            glob = "qemu-user-riscv-%s-*.linux-%s.tar.zst" % (build_flavor, arch),
         ))
 
     return ctx.subprocess(
@@ -231,7 +231,7 @@ def llvm_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
 
     Artifact glob is derived from ``arch``:
 
-    ``{P}.ruyi-{RUYI_DATESTAMP}.{arch}.tar.zst``
+    ``{P}.ruyi-{RUYI_DATESTAMP}.linux-{arch}.tar.zst``
     """
 
     if arch not in ("x86_64", "aarch64", "riscv64"):
@@ -258,7 +258,7 @@ def llvm_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
     if src_tarball:
         mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
 
-    artifact_glob = "%s.ruyi-%s.%s.tar.zst" % (
+    artifact_glob = "%s.ruyi-%s.linux-%s.tar.zst" % (
         config["P"],
         config["RUYI_DATESTAMP"],
         arch,
@@ -299,7 +299,7 @@ def dynamorio_invocation(ctx, config, arch, builder_tag = None):
 
     Artifact glob is derived from ``arch``:
 
-    ``dynamorio-riscv-{PV}-ruyi.{RUYI_DATESTAMP}.{arch}.tar.zst``
+    ``dynamorio-riscv-{PV}-ruyi.{RUYI_DATESTAMP}.linux-{arch}.tar.zst``
     """
 
     if arch not in ("x86_64", "aarch64", "riscv64"):
@@ -321,7 +321,7 @@ def dynamorio_invocation(ctx, config, arch, builder_tag = None):
 
     image = builder_tag if builder_tag else pkgbuilder_image_tag("unified", "amd64")
 
-    artifact_glob = "dynamorio-riscv-%s-ruyi.%s.%s.tar.zst" % (
+    artifact_glob = "dynamorio-riscv-%s-ruyi.%s.linux-%s.tar.zst" % (
         config["PV"],
         config["RUYI_DATESTAMP"],
         arch,
@@ -373,7 +373,7 @@ def box64_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
 
     Artifact glob is derived from ``arch``:
 
-    ``{P}.{arch}.tar.zst``
+    ``{P}.linux-{arch}.tar.zst``
     """
 
     if arch not in ("aarch64", "riscv64"):
@@ -403,7 +403,7 @@ def box64_invocation(ctx, config, arch, src_tarball = None, builder_tag = None):
     if src_tarball:
         mounts_ro.append((src_tarball, "/tmp/src.tar.xz"))
 
-    artifact_glob = "%s.%s.tar.zst" % (config["P"], arch)
+    artifact_glob = "%s.linux-%s.tar.zst" % (config["P"], arch)
 
     return ctx.subprocess(
         argv = docker_run(
@@ -441,7 +441,7 @@ def wlink_invocation(ctx, config, arch, builder_tag = None):
 
     Artifact glob is derived from ``arch``:
 
-    ``wlink-*.{arch}.tar.gz``
+    ``wlink-*.linux-{arch}.tar.gz``
     """
 
     if arch not in ("aarch64", "riscv64", "x86_64"):
@@ -463,7 +463,7 @@ def wlink_invocation(ctx, config, arch, builder_tag = None):
 
     image = builder_tag if builder_tag else pkgbuilder_image_tag("rust-musl", "amd64")
 
-    artifact_glob = "wlink-*.%s.tar.gz" % arch
+    artifact_glob = "wlink-*.linux-%s.tar.gz" % arch
 
     return ctx.subprocess(
         argv = docker_run(

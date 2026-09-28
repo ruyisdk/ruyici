@@ -88,6 +88,6 @@ pushd "$INSTALL_ROOT"
 popd
 
 pushd "/tmp/prefix"
-    tar --zstd -cvf "/out/$OUT_P.$ARCH.tar.zst" \
+    tar --zstd -cvf "/out/$OUT_P.linux-$ARCH.tar.zst" \
         "$OUT_P"
 popd
