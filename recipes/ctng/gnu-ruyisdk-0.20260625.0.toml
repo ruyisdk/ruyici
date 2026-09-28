@@ -1,19 +1,25 @@
 # Artifact glob patterns produced by ct-ng CT_TARBALL_RESULT for
-# gnu-ruyisdk 0.20260625.0. The amd64 build runs natively on the
-# builder (no HOST- prefix); arm64 and riscv64 are cross builds
-# (HOST-aarch64-linux-gnu- / HOST-riscv64-linux-gnu- prefix).
+# gnu-ruyisdk 0.20260625.0. Result tarballs are named
+# "gnu-ruyisdk-<datestamp>.<os>-<arch>.tar.*"; the inner scripts render
+# the CT_TARBALL_RESULT_FILENAME override from tarball_name, datestamp
+# and the per-host suffix.
 #
-# The second wildcard matches the source revision component
-# (e.g. "6fdcde8c3e77") which varies across builds of the same
-# datestamp.
+# The Linux hosts build containerized on the amd64 CI box (amd64
+# natively, arm64/riscv64 as Canadian crosses); macos-arm64 builds
+# natively on the Apple Silicon rig without a container.
 
 defconfig = "recipes/ctng/gnu-ruyisdk-0.20260625.0.defconfig.in"
+tarball_name = "gnu-ruyisdk"
+datestamp = "20260625"
 
 [artifacts.amd64]
-globs = ["RuyiSDK-*-RuyiSDK-Sources-*-riscv64-ruyisdk-linux-gnu.tar.xz"]
+globs = ["gnu-ruyisdk-20260625.linux-amd64.tar.*"]
 
 [artifacts.arm64]
-globs = ["RuyiSDK-*-RuyiSDK-Sources-*-HOST-aarch64-linux-gnu-riscv64-ruyisdk-linux-gnu.tar.xz"]
+globs = ["gnu-ruyisdk-20260625.linux-arm64.tar.*"]
 
 [artifacts.riscv64]
-globs = ["RuyiSDK-*-RuyiSDK-Sources-*-HOST-riscv64-linux-gnu-riscv64-ruyisdk-linux-gnu.tar.xz"]
+globs = ["gnu-ruyisdk-20260625.linux-riscv64.tar.*"]
+
+[artifacts.macos-arm64]
+globs = ["gnu-ruyisdk-20260625.macos-arm64.tar.*"]
