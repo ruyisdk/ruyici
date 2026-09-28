@@ -8,10 +8,30 @@ export CT_PREFIX=/opt/ruyi
 
 cd /work
 
-if [[ -n "${CTNG_HOST_TRIPLET-}" ]]; then
+if [[ -n "${CTNG_HOST_TRIPLET-}" || -n "${CTNG_TARBALL_NAME-}" || -n "${CTNG_DEBUG-}" ]]; then
     cp "$1" /tmp/rendered.defconfig
-    printf 'CT_CANADIAN=y\nCT_HOST="%s"\n' "$CTNG_HOST_TRIPLET" \
-        >> /tmp/rendered.defconfig
+
+    if [[ -n "${CTNG_HOST_TRIPLET-}" ]]; then
+        printf 'CT_CANADIAN=y\nCT_HOST="%s"\n' "$CTNG_HOST_TRIPLET" \
+            >> /tmp/rendered.defconfig
+    fi
+
+    if [[ -n "${CTNG_TARBALL_NAME-}" ]]; then
+        : "${CTNG_DATESTAMP:?CTNG_TARBALL_NAME requires CTNG_DATESTAMP}"
+        : "${CTNG_HOST_SUFFIX:?CTNG_TARBALL_NAME requires CTNG_HOST_SUFFIX}"
+        # Appending after the seed's CT_TARBALL_RESULT_FILENAME line is
+        # intentional: for duplicate symbols in a defconfig, kconfig
+        # takes the last value.
+        printf 'CT_TARBALL_RESULT_FILENAME="%s-%s.%s"\n' \
+            "$CTNG_TARBALL_NAME" "$CTNG_DATESTAMP" "$CTNG_HOST_SUFFIX" \
+            >> /tmp/rendered.defconfig
+    fi
+
+    if [[ -n "${CTNG_DEBUG-}" && "${CTNG_DEBUG-}" != "0" ]]; then
+        printf 'CT_DEBUG_CT=y\nCT_DEBUG_CT_SAVE_STEPS=y\n' \
+            >> /tmp/rendered.defconfig
+    fi
+
     set -- /tmp/rendered.defconfig
 fi
 
