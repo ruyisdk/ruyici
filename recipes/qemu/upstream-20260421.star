@@ -23,7 +23,7 @@ _CONFIG = {
 
 
 def _build(ctx):
-    arch = ctx.var("arch", default = "amd64")
+    arch = ctx.var("arch", default = "x86_64")
     flavor = ctx.var("flavor", default = "both")
     src = ctx.var("src")  # required, no default
     builder_tag = ctx.var("builder_tag", default = "")

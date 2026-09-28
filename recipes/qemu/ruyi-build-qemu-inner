@@ -15,7 +15,7 @@ set -e
 # The optional variables TAR_STRIP_COMPONENTS and USE_MEM may also be
 # set through either mechanism.
 CONFIG_FILE="$1"
-ARCH="${2:-amd64}"
+ARCH="${2:-x86_64}"
 build_variants="${3:-both}"
 
 if [[ -n "$CONFIG_FILE" && -f "$CONFIG_FILE" ]]; then
@@ -45,11 +45,11 @@ done
 : "${USE_MEM:=true}"
 
 case "$ARCH" in
-amd64)
-    # we're compiling from amd64
+x86_64)
+    # we're compiling natively on the x86_64 builder
     CROSS_COMPILE_PREFIX=""
     ;;
-arm64)
+aarch64)
     CROSS_COMPILE_PREFIX="aarch64-linux-gnu-"
 
     # workaround broken sysroot logic in unified image 20250915
@@ -62,7 +62,7 @@ riscv64)
     #export PKG_CONFIG_LIBDIR=/sysroot/$ARCH/usr/local/lib/aarch64-linux-gnu/pkgconfig:/sysroot/$ARCH/usr/local/aarch64-linux-gnu/lib/pkgconfig:/sysroot/$ARCH/usr/local/share/pkgconfig:/sysroot/$ARCH/usr/lib/aarch64-linux-gnu/pkgconfig:/sysroot/$ARCH/usr/aarch64-linux-gnu/lib/pkgconfig:/sysroot/$ARCH/usr/share/pkgconfig
     ;;
 *)
-    echo "invalid ARCH: choices are amd64, arm64 or riscv64" >&2
+    echo "invalid ARCH: choices are x86_64, aarch64 or riscv64" >&2
     exit 1
     ;;
 esac
