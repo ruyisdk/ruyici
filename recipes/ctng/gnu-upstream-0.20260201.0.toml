@@ -1,14 +1,14 @@
 # Artifact glob patterns produced by ct-ng CT_TARBALL_RESULT for
-# gnu-upstream 0.20260201.0. The amd64 build runs natively on the
-# builder (no HOST- prefix); arm64 and riscv64 are cross builds
+# gnu-upstream 0.20260201.0. The x86_64 build runs natively on the
+# builder (no HOST- prefix); aarch64 and riscv64 are cross builds
 # (HOST-aarch64-linux-gnu- / HOST-riscv64-linux-gnu- prefix).
 
 defconfig = "recipes/ctng/gnu-upstream-0.20260201.0.defconfig.in"
 
-[artifacts.amd64]
+[artifacts.x86_64]
 globs = ["RuyiSDK-*-Upstream-Sources-riscv64-unknown-linux-gnu.tar.xz"]
 
-[artifacts.arm64]
+[artifacts.aarch64]
 globs = ["RuyiSDK-*-Upstream-Sources-HOST-aarch64-linux-gnu-riscv64-unknown-linux-gnu.tar.xz"]
 
 [artifacts.riscv64]

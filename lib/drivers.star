@@ -41,7 +41,7 @@ def ctng_invocation(
     If ``host_triplet`` is non-empty, the inner script appends
     ``CT_CANADIAN=y`` and ``CT_HOST="<triplet>"`` to the defconfig
     before invoking ct-ng, so that a single seed defconfig can serve
-    both native (amd64) and cross (arm64, riscv64) builds.
+    both native (x86_64) and cross (aarch64, riscv64) builds.
 
     If ``tarball_name`` is non-empty, the inner script overrides
     ``CT_TARBALL_RESULT_FILENAME`` so the result tarball is named

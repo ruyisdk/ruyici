@@ -24,8 +24,8 @@ load("ruyi-build://lib/drivers.star", "ctng_invocation")
 # name; ``container`` selects between the containerized Linux path and
 # the native macOS path.
 _HOSTS = {
-    "amd64": {"triplet": "", "suffix": "linux-x86_64", "container": True},
-    "arm64": {"triplet": "aarch64-linux-gnu", "suffix": "linux-aarch64", "container": True},
+    "x86_64": {"triplet": "", "suffix": "linux-x86_64", "container": True},
+    "aarch64": {"triplet": "aarch64-linux-gnu", "suffix": "linux-aarch64", "container": True},
     "riscv64": {"triplet": "riscv64-linux-gnu", "suffix": "linux-riscv64", "container": True},
     "darwin-aarch64": {"triplet": "", "suffix": "darwin-aarch64", "container": False},
 }
@@ -33,7 +33,7 @@ _HOSTS = {
 # Linux hosts build in the unified container on the amd64 CI box and are
 # always enabled; macOS builds must run on the Apple Silicon rig and are
 # opt-in per recipe.
-_DEFAULT_HOSTS = ["amd64", "arm64", "riscv64"]
+_DEFAULT_HOSTS = ["x86_64", "aarch64", "riscv64"]
 
 
 def ctng_toolchain(data, hosts = None):
@@ -50,7 +50,7 @@ def ctng_toolchain(data, hosts = None):
     * ``datestamp`` (optional) — required iff ``tarball_name`` is set
 
     ``hosts`` defaults to the containerized Linux hosts
-    (``["amd64", "arm64", "riscv64"]``); pass an explicit list to opt
+    (``["x86_64", "aarch64", "riscv64"]``); pass an explicit list to opt
     into additional hosts such as ``"darwin-aarch64"``.
 
     Recognized build parameters (``ruyi admin build-package -v``):

@@ -12,10 +12,10 @@ defconfig = "recipes/ctng/gnu-ruyisdk-0.20260625.0.defconfig.in"
 tarball_name = "gnu-ruyisdk"
 datestamp = "20260625"
 
-[artifacts.amd64]
+[artifacts.x86_64]
 globs = ["gnu-ruyisdk-20260625.linux-x86_64.tar.*"]
 
-[artifacts.arm64]
+[artifacts.aarch64]
 globs = ["gnu-ruyisdk-20260625.linux-aarch64.tar.*"]
 
 [artifacts.riscv64]
