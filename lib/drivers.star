@@ -302,9 +302,9 @@ def dynamorio_invocation(ctx, config, arch, builder_tag = None):
     ``dynamorio-riscv-{PV}-ruyi.{RUYI_DATESTAMP}.{arch}.tar.zst``
     """
 
-    if arch not in ("amd64", "arm64", "riscv64"):
+    if arch not in ("x86_64", "aarch64", "riscv64"):
         fail(
-            "dynamorio_invocation: arch must be one of amd64/arm64/riscv64 "
+            "dynamorio_invocation: arch must be one of x86_64/aarch64/riscv64 "
             + "(got %r)" % arch,
         )
 
