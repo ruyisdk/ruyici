@@ -9,6 +9,6 @@ data = RUYI.load_toml(
 )
 for name, fn in ctng_toolchain(
     data,
-    hosts = ["amd64", "arm64", "riscv64", "macos-arm64"],
+    hosts = ["amd64", "arm64", "riscv64", "darwin-aarch64"],
 ).items():
     RUYI.build.schedule_build(fn, name = name)

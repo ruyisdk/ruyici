@@ -21,7 +21,7 @@
 #   CTNG_PATCH_DIR      toolchain-patches directory (CT_LOCAL_PATCH_DIR)
 #   CTNG_TARBALL_NAME   tarball name component, e.g. "gnu-ruyisdk"
 #   CTNG_DATESTAMP      datestamp component, e.g. "20260625"
-#   CTNG_HOST_SUFFIX    host suffix component, e.g. "macos-arm64"
+#   CTNG_HOST_SUFFIX    host suffix component, e.g. "darwin-aarch64"
 #   CTNG_DEBUG          optional; unless empty or "0", enable
 #                       CT_DEBUG_CT and CT_DEBUG_CT_SAVE_STEPS
 #   CT_NG               optional; ct-ng binary to use (default: ct-ng)
@@ -143,7 +143,7 @@ main() {
     : "${CTNG_PATCH_DIR:?set to the toolchain-patches directory}"
     : "${CTNG_TARBALL_NAME:?set to the tarball name component, e.g. gnu-ruyisdk}"
     : "${CTNG_DATESTAMP:?set to the datestamp component, e.g. 20260625}"
-    : "${CTNG_HOST_SUFFIX:?set to the host suffix component, e.g. macos-arm64}"
+    : "${CTNG_HOST_SUFFIX:?set to the host suffix component, e.g. darwin-aarch64}"
 
     [[ $# == 1 && -f $1 ]] || die "usage: $0 <seed.defconfig> (with CTNG_* env vars set)"
 

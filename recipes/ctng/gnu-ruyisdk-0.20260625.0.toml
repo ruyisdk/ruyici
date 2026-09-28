@@ -5,7 +5,7 @@
 # and the per-host suffix.
 #
 # The Linux hosts build containerized on the amd64 CI box (amd64
-# natively, arm64/riscv64 as Canadian crosses); macos-arm64 builds
+# natively, arm64/riscv64 as Canadian crosses); darwin-aarch64 builds
 # natively on the Apple Silicon rig without a container.
 
 defconfig = "recipes/ctng/gnu-ruyisdk-0.20260625.0.defconfig.in"
@@ -13,13 +13,13 @@ tarball_name = "gnu-ruyisdk"
 datestamp = "20260625"
 
 [artifacts.amd64]
-globs = ["gnu-ruyisdk-20260625.linux-amd64.tar.*"]
+globs = ["gnu-ruyisdk-20260625.linux-x86_64.tar.*"]
 
 [artifacts.arm64]
-globs = ["gnu-ruyisdk-20260625.linux-arm64.tar.*"]
+globs = ["gnu-ruyisdk-20260625.linux-aarch64.tar.*"]
 
 [artifacts.riscv64]
 globs = ["gnu-ruyisdk-20260625.linux-riscv64.tar.*"]
 
-[artifacts.macos-arm64]
-globs = ["gnu-ruyisdk-20260625.macos-arm64.tar.*"]
+[artifacts.darwin-aarch64]
+globs = ["gnu-ruyisdk-20260625.darwin-aarch64.tar.*"]

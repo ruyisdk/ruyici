@@ -47,7 +47,7 @@ def ctng_invocation(
     ``CT_TARBALL_RESULT_FILENAME`` so the result tarball is named
     ``<tarball_name>-<datestamp>.<host_suffix>.tar.*`` instead of the
     seed's pkgversion-derived name. ``datestamp`` and ``host_suffix``
-    (e.g. ``"linux-amd64"``, ``"macos-arm64"``) are required in that
+    (e.g. ``"linux-x86_64"``, ``"darwin-aarch64"``) are required in that
     case.
 
     If ``containerize`` is false, the build runs directly on the host
