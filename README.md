@@ -24,7 +24,7 @@ ruyi admin build-package ./recipes/llvm/upstream-20250915.star \
 
 `--dry-run` prints the rendered `docker run` argv without executing
 anything. `-n <name>` restricts execution to one scheduled build
-(e.g. `-n amd64` for the gnu-upstream matrix). See
+(e.g. `-n x86_64` for the gnu-upstream matrix). See
 [`docs/build-recipe-migration-roadmap.md`](./docs/build-recipe-migration-roadmap.md)
 for the per-driver migration status.
 
